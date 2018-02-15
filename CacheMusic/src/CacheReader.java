@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class CacheReader {
-    private CacheReader() {}
     private final static String CACHE_FILE_NAME_PREFIX = "f_";
     private final static long CACHE_PART_SIZE_IN_BYTES = 1024;
 
@@ -53,28 +52,76 @@ public class CacheReader {
     }
 
     /**
-     * Search at files for name in MP3 metadata
-     * @param files List with file names
+     * Searches at <code>partsPaths</code> for name in MP3 metadata
+     *
+     * @param partsPaths List with file names
      * @return Name of file or <code>null</code> if not found
      */
-    public static String searchForName(List<String> files) {
-        boolean found = true;
+    public static String searchSongName(List<String> partsPaths) {
+        throw new UnsupportedOperationException();
+    }
 
-        if (found)
-            return "name";
+    public static boolean containsMetadata(String filePath) {
+        Path file = Paths.get(filePath);
 
-        return null;
+        return containsMetadata(file);
+    }
+
+    public static boolean containsMetadata(Path filePath) {
+        if (!Files.exists(filePath)) return false;
+
+        throw new UnsupportedOperationException();
+    }
+
+    private static String detectCachePath() {
+        String userOS = System.getProperty("os.name").toLowerCase();
+
+        if (userOS.contains("win")) {
+            // WINDOWS
+            // <ROOT>:\Users\<USERNAME>\AppData\Local\Google\Chrome\User Data\Default\Media Cache
+            String googleChromeMusicCache = Paths.get(Paths.get("").getRoot().toString(),
+                    "Users", "AppData", "Local", "Google", "Chrome", "User Data", "Default", "Media Cache")
+                    .toAbsolutePath().toString();
+
+        } else if (userOS.contains("mac")) {
+            // MAC OS
+
+        } else if (userOS.contains("nix") || userOS.contains("nux") || userOS.contains("aix")) {
+            // UNIX
+            // $Home/.cache/google-chrome/Default/Media\ Cache/
+
+        } else if (userOS.contains("sunos")) {
+            // SOLARIS
+
+        } else {
+            // UNKNOWN OS
+            throw new UnsupportedOperationException("Unknown OS!");
+        }
+
+        throw new UnsupportedOperationException();
     }
 
     public static void main(String[] args) {
-        System.out.println("a".compareTo("9"));
-        System.out.println("a9f".compareTo("aaf"));
+        String musicCachePath = "";
+        try {
+            musicCachePath = detectCachePath();
+        } catch (UnsupportedOperationException e) {
+            e.getMessage();
+            return;
+        }
 
-        String windowsLocalAppData = "%localappdata%";
-        String googleChromeMusicCache = windowsLocalAppData + "\\Google\\Chrome\\User Data\\Default\\Media Cache";
-
-        List<List<String>> files = scan(googleChromeMusicCache);
-        String fileName = searchForName(files);
-        FileBuilder.build(files, fileName);
+        List<List<String>> songs = scan(musicCachePath);
+        long filesAnalysed = 0;
+        for (List<String> songParts : songs) {
+            String fileName = searchSongName(songParts);
+            if (fileName == null) {
+                FileBuilder.build(songParts);
+            } else {
+                FileBuilder.build(songParts, fileName);
+            }
+            filesAnalysed += songParts.size();
+        }
+        System.out.format("Cache was successfully read!\n== Statistics:\n  Analysed part files: %d.\n  Found songs: %d.",
+                filesAnalysed, songs.size());
     }
 }
