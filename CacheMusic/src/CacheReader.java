@@ -1,3 +1,4 @@
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -62,15 +63,33 @@ public class CacheReader {
     }
 
     public static boolean containsMetadata(String filePath) {
-        Path file = Paths.get(filePath);
-
-        return containsMetadata(file);
+        return containsMetadata(Paths.get(filePath));
     }
 
     public static boolean containsMetadata(Path filePath) {
-        if (!Files.exists(filePath)) return false;
+        if (!Files.exists(filePath) || Files.isDirectory(filePath)) return false;
 
-        throw new UnsupportedOperationException();
+        String fileAbsolutePath = filePath.toAbsolutePath().toString();
+
+        final int MAX_TAG_LENGTH = 4; // ID3v1 tag is 4 bytes
+        final String META_TAG = "ID3";
+
+        try (FileInputStream file = new FileInputStream(fileAbsolutePath)) {
+            byte[] header = new byte[MAX_TAG_LENGTH]; // 3 for ID3, 4 for ID3v1
+
+            int readBytes = file.read(header);
+            if (readBytes > 0) {
+                if (new String(header).toUpperCase().contains(META_TAG)) {
+                    return true;
+                }
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace(System.err);
+            return false;
+        }
+
+        return false;
     }
 
     private static String detectCachePath() {
