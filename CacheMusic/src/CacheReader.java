@@ -11,6 +11,11 @@ public class CacheReader {
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * Search at files for name in MP3 metadata
+     * @param files List with file names
+     * @return Name of file or <code>null</code> if not found
+     */
     public static String searchForName(List<String> files) {
         boolean found = true;
 
