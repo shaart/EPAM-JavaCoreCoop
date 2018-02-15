@@ -1,14 +1,55 @@
+import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 
 public class CacheReader {
     private CacheReader() {}
+    private final static String CACHE_FILE_NAME_PREFIX = "f_";
+    private final static long CACHE_PART_SIZE_IN_BYTES = 1024;
+
+    private CacheReader() {
+    }
+
     /**
-     * Scans folder and make list of part files for build
-     * @param folderPath
-     * @return
+     * Scans folder and make lists of song parts for build.<br>
+     * Each <code>List&lt;String&gt;</code> contains paths to parts of song, that must be assembled.
+     *
+     * @param cacheFolderPath Path to cache folder
+     * @return List of songs that must be assembled. Each song presented as list of part files.<br>
+     * If received <code>cacheFolderPath</code> not exists or is not a directory - returns <code>null</code>.
      */
-    public static List<String> scan(String folderPath) {
-        throw new UnsupportedOperationException();
+    public static List<List<String>> scan(String cacheFolderPath) {
+        Path cacheFolder = Paths.get(cacheFolderPath);
+        if (Files.exists(cacheFolder) && Files.isDirectory(cacheFolder)) {
+            List<List<String>> songs = new ArrayList<>();
+
+            try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(cacheFolder)) {
+                List<String> songParts = new ArrayList<>();
+                for (Path songPart : directoryStream) {
+                    if (songPart.getFileName().startsWith(CACHE_FILE_NAME_PREFIX)
+                            && Files.size(songPart) <= CACHE_PART_SIZE_IN_BYTES) {
+                        if (containsMetadata(songPart) && songParts.size() > 0) { // new .mp3 file
+                            songs.add(songParts); // save prev list of parts
+                            songParts = new ArrayList<>(); // and create new list of parts
+                        }
+                        songParts.add(songPart.toAbsolutePath().toString());
+                    }
+                }
+                if (songParts.size() > 0) { // if last read part was separate song
+                    songs.add(songParts);
+                }
+            } catch (IOException ex) {
+                System.err.println("Something went wrong when trying to scan a cache folder!\n" + ex.getMessage());
+            }
+
+            return songs;
+        } else {
+            return null;
+        }
     }
 
     /**
