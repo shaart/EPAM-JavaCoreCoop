@@ -73,7 +73,7 @@ public class CacheReader {
         String windowsLocalAppData = "%localappdata%";
         String googleChromeMusicCache = windowsLocalAppData + "\\Google\\Chrome\\User Data\\Default\\Media Cache";
 
-        List<String> files = scan(googleChromeMusicCache);
+        List<List<String>> files = scan(googleChromeMusicCache);
         String fileName = searchForName(files);
         FileBuilder.build(files, fileName);
     }
