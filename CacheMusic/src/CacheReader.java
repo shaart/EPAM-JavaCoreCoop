@@ -158,10 +158,9 @@ public class CacheReader {
         if (userOS.contains("win")) {
             // WINDOWS
             // <ROOT>:\Users\<USERNAME>\AppData\Local\Google\Chrome\User Data\Default\Media Cache
-            String googleChromeMusicCache = Paths.get(Paths.get("").getRoot().toString(),
-                    "Users", "AppData", "Local", "Google", "Chrome", "User Data", "Default", "Media Cache")
+            String googleChromeMusicCache = Paths.get(System.getProperty("user.home") , "AppData", "Local", "Google", "Chrome", "User Data", "Default", "Media Cache")
                     .toAbsolutePath().toString();
-
+            return googleChromeMusicCache;
         } else if (userOS.contains("mac")) {
             // MAC OS
 
