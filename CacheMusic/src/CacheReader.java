@@ -1,5 +1,4 @@
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -8,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class CacheReader {
+
     private final static String CACHE_FILE_NAME_PREFIX = "f_";
     private final static long CACHE_PART_SIZE_IN_BYTES = 1024;
 
@@ -59,23 +59,71 @@ public class CacheReader {
      * @return Name of file or <code>null</code> if not found
      */
     public static String searchSongName(List<String> partsPaths) {
-        throw new UnsupportedOperationException();
-    }
+        String songName = null;
+        for (String partPath : partsPaths) {
+            songName = searchSongName(partPath);
+            if (songName != null) break;
+        }
 
-
+        return songName;
     }
 
     /**
+     * Searches at <code>filePath</code> for name in MP3 metadata
      *
      * @param filePath Path to file
+     * @return Name of file or <code>null</code> if not found
      */
-            }
+    public static String searchSongName(String filePath) {
+        String songName = null;
+        Path path = Paths.get(filePath);
+        String fileAbsolutePath = path.toAbsolutePath().toString();
 
-
-
-            }
+        Metadata.FormatName format = Metadata.getFormat(path);
+        switch (format) {
+            case ID3v1:
+                break;
+            case ID3v2:
+                break;
+            case NONE:
+            default:
+                songName = null;
+                break;
         }
 
+        if (Metadata.containsAtStart(path)) {
+            File file = new File(filePath);
+            final int MAX_TAG_LENGTH = 4; // ID3v1 tag is 4 bytes (TAG+)
+            final String META_TAG_ID3v1 = "TAG";
+            final String META_TAG_ID3v2 = "ID3";
+
+            try (FileInputStream fileStream = new FileInputStream(file)) {
+
+            } catch (Exception e) {
+                e.printStackTrace(System.err);
+            }
+        } else if (Metadata.containsAtEnd(path)) {
+            final int META_POST_PENDED_LENGTH = 10;
+            final String META_TAG_ID3v2_REVERSED = "3DI";
+            int fileSizeInBytes = 0;
+
+            try (RandomAccessFile file = new RandomAccessFile(fileAbsolutePath, "r")) {
+                file.skipBytes(fileSizeInBytes - META_POST_PENDED_LENGTH);
+                byte[] header = new byte[META_POST_PENDED_LENGTH];
+
+                file.readFully(header, 0, META_POST_PENDED_LENGTH);
+                String tag = new String(header).toUpperCase();
+                if (tag.contains(META_TAG_ID3v2_REVERSED)) {
+
+                }
+            } catch (IOException e) {
+                //
+            }
+        } else {
+            return null;
+        }
+
+        return songName;
     }
 
     /**
@@ -89,7 +137,7 @@ public class CacheReader {
         if (userOS.contains("win")) {
             // WINDOWS
             // <ROOT>:\Users\<USERNAME>\AppData\Local\Google\Chrome\User Data\Default\Media Cache
-            String googleChromeMusicCache = Paths.get(System.getProperty("user.home") , "AppData", "Local", "Google", "Chrome", "User Data", "Default", "Media Cache")
+            String googleChromeMusicCache = Paths.get(System.getProperty("user.home"), "AppData", "Local", "Google", "Chrome", "User Data", "Default", "Media Cache")
                     .toAbsolutePath().toString();
             return googleChromeMusicCache;
         } else if (userOS.contains("mac")) {
