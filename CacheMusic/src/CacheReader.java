@@ -64,6 +64,7 @@ public class CacheReader {
 
     /**
      * Checks for metadata at file.
+     *
      * @param filePath Path to file
      * @return <code>true</code> - if contains metadata<br><code>false</code> - if not found
      */
@@ -73,19 +74,27 @@ public class CacheReader {
 
     /**
      * Checks for metadata at file.
+     *
      * @param filePath Path to file
      * @return <code>true</code> - if contains metadata<br><code>false</code> - if not found
      */
     public static boolean containsMetadata(Path filePath) {
-        if (!Files.exists(filePath) || Files.isDirectory(filePath)) return false;
+        return containsMetadataAtStart(filePath) || containsMetadataAtEnd(filePath);
+    }
 
+    /**
+     * Checks for metadata at start of file.
+     *
+     * @param filePath Path to file
+     * @return <code>true</code> - if contains metadata<br><code>false</code> - if not found
+     */
+    private static boolean containsMetadataAtStart(Path filePath) {
+        if (!Files.exists(filePath) || Files.isDirectory(filePath)) return false;
         String fileAbsolutePath = filePath.toAbsolutePath().toString();
 
         final int MAX_TAG_LENGTH = 4; // ID3v1 tag is 4 bytes (TAG+)
         final String META_TAG_ID3v1 = "TAG";
         final String META_TAG_ID3v2 = "ID3";
-        final int TAG_POST_PENDED_LENGTH = 10;
-        final String META_TAG_ID3v2_REVERSED = "3DI";
 
         try (FileInputStream file = new FileInputStream(fileAbsolutePath)) {
             byte[] header = new byte[MAX_TAG_LENGTH]; // 3 for ID3, 4 for ID3v1
@@ -97,16 +106,29 @@ public class CacheReader {
                     return true;
                 }
             }
-
         } catch (Exception e) {
-//            e.printStackTrace(System.err);
             return false;
         }
+
+        return false;
+    }
+
+    /**
+     * Checks for metadata at end of file.
+     *
+     * @param filePath Path to file
+     * @return <code>true</code> - if contains metadata<br><code>false</code> - if not found
+     */
+    private static boolean containsMetadataAtEnd(Path filePath) {
+        if (!Files.exists(filePath) || Files.isDirectory(filePath)) return false;
+        String fileAbsolutePath = filePath.toAbsolutePath().toString();
+
+        final int TAG_POST_PENDED_LENGTH = 10;
+        final String META_TAG_ID3v2_REVERSED = "3DI";
         int fileSizeInBytes = 0;
         try {
             fileSizeInBytes = (int) Files.size(filePath);
         } catch (IOException e) {
-//            System.err.println("Error: " + e.getMessage());
             return false;
         }
         try (RandomAccessFile file = new RandomAccessFile(fileAbsolutePath, "r")) {
@@ -119,7 +141,6 @@ public class CacheReader {
                 return true;
             }
         } catch (IOException e) {
-//            System.err.println("Error: " + e.getMessage());
             return false;
         }
 
@@ -128,6 +149,7 @@ public class CacheReader {
 
     /**
      * Seaching for cache path by user's OS.
+     *
      * @return Path to Media Cache
      */
     private static String detectCachePath() {
@@ -160,6 +182,7 @@ public class CacheReader {
 
     /**
      * Default program's entry point
+     *
      * @param args Program arguments
      */
     public static void main(String[] args) {
