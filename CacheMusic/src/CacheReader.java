@@ -81,21 +81,45 @@ public class CacheReader {
 
         String fileAbsolutePath = filePath.toAbsolutePath().toString();
 
-        final int MAX_TAG_LENGTH = 4; // ID3v1 tag is 4 bytes
-        final String META_TAG = "ID3";
+        final int MAX_TAG_LENGTH = 4; // ID3v1 tag is 4 bytes (TAG+)
+        final String META_TAG_ID3v1 = "TAG";
+        final String META_TAG_ID3v2 = "ID3";
+        final int TAG_POST_PENDED_LENGTH = 10;
+        final String META_TAG_ID3v2_REVERSED = "3DI";
 
         try (FileInputStream file = new FileInputStream(fileAbsolutePath)) {
             byte[] header = new byte[MAX_TAG_LENGTH]; // 3 for ID3, 4 for ID3v1
 
             int readBytes = file.read(header);
             if (readBytes > 0) {
-                if (new String(header).toUpperCase().contains(META_TAG)) {
+                String tag = new String(header).toUpperCase();
+                if (tag.contains(META_TAG_ID3v1) || tag.contains(META_TAG_ID3v2)) {
                     return true;
                 }
             }
 
         } catch (Exception e) {
-            e.printStackTrace(System.err);
+//            e.printStackTrace(System.err);
+            return false;
+        }
+        int fileSizeInBytes = 0;
+        try {
+            fileSizeInBytes = (int) Files.size(filePath);
+        } catch (IOException e) {
+//            System.err.println("Error: " + e.getMessage());
+            return false;
+        }
+        try (RandomAccessFile file = new RandomAccessFile(fileAbsolutePath, "r")) {
+            file.skipBytes(fileSizeInBytes - TAG_POST_PENDED_LENGTH);
+            byte[] header = new byte[TAG_POST_PENDED_LENGTH];
+
+            file.readFully(header, 0, TAG_POST_PENDED_LENGTH);
+            String tag = new String(header).toUpperCase();
+            if (tag.contains(META_TAG_ID3v2_REVERSED)) {
+                return true;
+            }
+        } catch (IOException e) {
+//            System.err.println("Error: " + e.getMessage());
             return false;
         }
 
