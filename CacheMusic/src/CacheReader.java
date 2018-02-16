@@ -6,6 +6,13 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
+/* TODO
+    Encoding UTF-8/UTF-16
+    - find byte where stores information about encoding
+    - read meta info with correct encoding
+    - parse required data to song name with extension
+ */
+
 public class CacheReader {
 
     private final static String CACHE_FILE_NAME_PREFIX = "f_";
@@ -71,6 +78,7 @@ public class CacheReader {
     /**
      * Converts integer's bytes to integer.<br>
      * Auxiliary method for parsing metadata's information to numbers.
+     *
      * @param b Bytes of number
      * @return Number equals these bytes
      */
@@ -116,11 +124,11 @@ public class CacheReader {
 
                     buffer = new byte[1];
                     fileStream.read(buffer);
-                    int tagVersion = byteArrayToInt(buffer);
+                    int tagVersion = buffer[0];
 
                     buffer = new byte[1];
                     fileStream.read(buffer);
-                    int tagSubVersion = byteArrayToInt(buffer);
+                    int tagSubVersion = buffer[0];
 
                     buffer = new byte[1];
                     fileStream.read(buffer);
@@ -133,17 +141,52 @@ public class CacheReader {
 
                     fileStream.read(buffer);
                     for (int i = 0; i < buffer.length; i++) {
-                        buffer[i] = (byte) (4 * (buffer[i] & 0b011_1111)); // unset 7 bit
+                        buffer[i] = (byte) (buffer[i] & 0b011_1111); // unset 7 bit
                     }
 
-                    final int size = byteArrayToInt(buffer);
+                    final int headerSize = byteArrayToInt(buffer);
+                    System.out.printf("== Read\n  %s v%s.%s\n  flags = %d (a:%d b:%d c:%d)\n  headerSize = %d\n", tag, tagVersion, tagSubVersion, flags, flagUnsync, flagExtendedHeader, flagExperIndicator, headerSize);
 
-                    System.out.printf("== Read\n  %s v%s.%s\n  flags = %d (a:%d b:%d c:%d)\n  size = %d\n", tag, tagVersion, tagSubVersion, flags, flagUnsync, flagExtendedHeader, flagExperIndicator, size);
+                    //
+                    // HERE WE MUST READ META AND PARSE TO 'TITLE' HEADER AND 'ARTIST' HEADER
+                    // AND SEEKING FOR ENCODING
+                    //
+                    byte[] remainedHeader = new byte[headerSize];
+                    int bytesRead = fileStream.read(remainedHeader);
 
-                    byte[] meta = new byte[size];
-                    int bytesRead = fileStream.read(meta);
                     System.out.println("Read header: " + bytesRead + " bytes");
-                    //songName = new String(meta, CHARSET);
+
+//                    System.arraycopy(remainedHeader, 0, buffer, 0, 4);// buffer = Arrays.copyOf(remainedHeader, 4, 4);
+//                    String read = new String(buffer);
+                    String codingName;
+                    int encoding = buffer[0];
+                    System.out.println();
+                    switch (encoding) {
+                        case 0:
+                            System.out.println("ISO_8859_1 encoding found - " + encoding);
+                            codingName = "ISO_8859_1";
+                            break;
+                        case 1:
+                            System.out.println("UTF_16 encoding found - " + encoding);
+                            codingName = "UTF_16";
+                            break;
+                        case 2:
+                            System.out.println("UTF_16BE encoding found - " + encoding);
+                            codingName = "UTF_16BE";
+                            break;
+                        case 3:
+                            System.out.println(" encoding found - " + encoding);
+                            codingName = "UTF-8";
+                            break;
+                        default:
+                            codingName = "UTF-8";
+                            break;
+                    }
+
+                    //
+                    // THEN MAKE FROM THEM "[artist] - [title].mp3" NAME
+                    //
+                    //songName = new String(remainedHeader, CHARSET);
                 } catch (Exception e) {
                     e.printStackTrace(System.err);
                 }
@@ -202,23 +245,25 @@ public class CacheReader {
         String musicCachePath = "";
         try {
             musicCachePath = detectCachePath();
+
+            List<List<String>> songs = scan(musicCachePath);
+            long filesAnalysed = 0;
+            for (List<String> songParts : songs) {
+                String fileName = searchSongName(songParts);
+                if (fileName == null) {
+                    FileBuilder.build(songParts);
+                } else {
+                    FileBuilder.build(songParts, fileName);
+                }
+                filesAnalysed += songParts.size();
+            }
+            System.out.format("Cache was successfully read!\n== Statistics:\n  Analysed part files: %d.\n  Found songs: %d.",
+                    filesAnalysed, songs.size());
+
         } catch (UnsupportedOperationException e) {
-            e.getMessage();
+            System.out.println("Error: " + e.getMessage() + " at");
+            e.printStackTrace();
             return;
         }
-
-        List<List<String>> songs = scan(musicCachePath);
-        long filesAnalysed = 0;
-        for (List<String> songParts : songs) {
-            String fileName = searchSongName(songParts);
-            if (fileName == null) {
-                FileBuilder.build(songParts);
-            } else {
-                FileBuilder.build(songParts, fileName);
-            }
-            filesAnalysed += songParts.size();
-        }
-        System.out.format("Cache was successfully read!\n== Statistics:\n  Analysed part files: %d.\n  Found songs: %d.",
-                filesAnalysed, songs.size());
     }
 }
