@@ -8,6 +8,8 @@ import java.nio.file.Paths;
 public class Metadata {
     public enum FormatName {NONE, ID3v1, ID3v2}
 
+    private Metadata() {};
+
     private String tag;
     private String version;
     private String artist;
@@ -75,7 +77,7 @@ public class Metadata {
      * @return <code>true</code> - if contains metadata<br><code>false</code> - if not found
      */
     public static boolean containsAtStart(Path filePath) {
-        return getFormatAtStart(filePath) == FormatName.NONE;
+        return getFormatAtStart(filePath) != FormatName.NONE;
 
     }
     /**
@@ -118,7 +120,7 @@ public class Metadata {
      * @return <code>true</code> - if contains metadata<br><code>false</code> - if not found
      */
     public static boolean containsAtEnd(Path filePath) {
-        return getFormatAtEnd(filePath) == FormatName.NONE;
+        return getFormatAtEnd(filePath) != FormatName.NONE;
     }
 
     /**
