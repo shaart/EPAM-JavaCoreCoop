@@ -32,7 +32,7 @@ public class CacheReader {
                 for (Path songPart : directoryStream) {
                     if (songPart.getFileName().startsWith(CACHE_FILE_NAME_PREFIX)
                             && Files.size(songPart) <= CACHE_PART_SIZE_IN_BYTES) {
-                        if (containsMetadata(songPart) && songParts.size() > 0) { // new .mp3 file
+                        if (Metadata.contains(songPart) && songParts.size() > 0) { // new .mp3 file
                             songs.add(songParts); // save prev list of parts
                             songParts = new ArrayList<>(); // and create new list of parts
                         }
@@ -62,89 +62,20 @@ public class CacheReader {
         throw new UnsupportedOperationException();
     }
 
-    /**
-     * Checks for metadata at file.
-     *
-     * @param filePath Path to file
-     * @return <code>true</code> - if contains metadata<br><code>false</code> - if not found
-     */
-    public static boolean containsMetadata(String filePath) {
-        return containsMetadata(Paths.get(filePath));
+
     }
 
     /**
-     * Checks for metadata at file.
      *
      * @param filePath Path to file
-     * @return <code>true</code> - if contains metadata<br><code>false</code> - if not found
      */
-    public static boolean containsMetadata(Path filePath) {
-        return containsMetadataAtStart(filePath) || containsMetadataAtEnd(filePath);
-    }
-
-    /**
-     * Checks for metadata at start of file.
-     *
-     * @param filePath Path to file
-     * @return <code>true</code> - if contains metadata<br><code>false</code> - if not found
-     */
-    private static boolean containsMetadataAtStart(Path filePath) {
-        if (!Files.exists(filePath) || Files.isDirectory(filePath)) return false;
-        String fileAbsolutePath = filePath.toAbsolutePath().toString();
-
-        final int MAX_TAG_LENGTH = 4; // ID3v1 tag is 4 bytes (TAG+)
-        final String META_TAG_ID3v1 = "TAG";
-        final String META_TAG_ID3v2 = "ID3";
-
-        try (FileInputStream file = new FileInputStream(fileAbsolutePath)) {
-            byte[] header = new byte[MAX_TAG_LENGTH]; // 3 for ID3, 4 for ID3v1
-
-            int readBytes = file.read(header);
-            if (readBytes > 0) {
-                String tag = new String(header).toUpperCase();
-                if (tag.contains(META_TAG_ID3v1) || tag.contains(META_TAG_ID3v2)) {
-                    return true;
-                }
             }
-        } catch (Exception e) {
-            return false;
-        }
 
-        return false;
-    }
 
-    /**
-     * Checks for metadata at end of file.
-     *
-     * @param filePath Path to file
-     * @return <code>true</code> - if contains metadata<br><code>false</code> - if not found
-     */
-    private static boolean containsMetadataAtEnd(Path filePath) {
-        if (!Files.exists(filePath) || Files.isDirectory(filePath)) return false;
-        String fileAbsolutePath = filePath.toAbsolutePath().toString();
 
-        final int TAG_POST_PENDED_LENGTH = 10;
-        final String META_TAG_ID3v2_REVERSED = "3DI";
-        int fileSizeInBytes = 0;
-        try {
-            fileSizeInBytes = (int) Files.size(filePath);
-        } catch (IOException e) {
-            return false;
-        }
-        try (RandomAccessFile file = new RandomAccessFile(fileAbsolutePath, "r")) {
-            file.skipBytes(fileSizeInBytes - TAG_POST_PENDED_LENGTH);
-            byte[] header = new byte[TAG_POST_PENDED_LENGTH];
-
-            file.readFully(header, 0, TAG_POST_PENDED_LENGTH);
-            String tag = new String(header).toUpperCase();
-            if (tag.contains(META_TAG_ID3v2_REVERSED)) {
-                return true;
             }
-        } catch (IOException e) {
-            return false;
         }
 
-        return false;
     }
 
     /**
