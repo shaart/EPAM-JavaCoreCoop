@@ -9,7 +9,7 @@ import java.util.List;
 public class CacheReader {
 
     private final static String CACHE_FILE_NAME_PREFIX = "f_";
-    private final static long CACHE_PART_SIZE_IN_BYTES = 1024;
+    private final static long CACHE_PART_SIZE_IN_BYTES = 1024 * 1024;
 
     private CacheReader() {
     }
@@ -30,7 +30,7 @@ public class CacheReader {
             try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(cacheFolder)) {
                 List<String> songParts = new ArrayList<>();
                 for (Path songPart : directoryStream) {
-                    if (songPart.getFileName().startsWith(CACHE_FILE_NAME_PREFIX)
+                    if (songPart.getFileName().toString().startsWith(CACHE_FILE_NAME_PREFIX)
                             && Files.size(songPart) <= CACHE_PART_SIZE_IN_BYTES) {
                         if (Metadata.contains(songPart) && songParts.size() > 0) { // new .mp3 file
                             songs.add(songParts); // save prev list of parts
