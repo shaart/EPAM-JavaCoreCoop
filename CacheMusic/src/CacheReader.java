@@ -62,10 +62,20 @@ public class CacheReader {
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * Checks for metadata at file.
+     * @param filePath Path to file
+     * @return <code>true</code> - if contains metadata<br><code>false</code> - if not found
+     */
     public static boolean containsMetadata(String filePath) {
         return containsMetadata(Paths.get(filePath));
     }
 
+    /**
+     * Checks for metadata at file.
+     * @param filePath Path to file
+     * @return <code>true</code> - if contains metadata<br><code>false</code> - if not found
+     */
     public static boolean containsMetadata(Path filePath) {
         if (!Files.exists(filePath) || Files.isDirectory(filePath)) return false;
 
@@ -92,6 +102,10 @@ public class CacheReader {
         return false;
     }
 
+    /**
+     * Seaching for cache path by user's OS.
+     * @return Path to Media Cache
+     */
     private static String detectCachePath() {
         String userOS = System.getProperty("os.name").toLowerCase();
 
@@ -120,6 +134,10 @@ public class CacheReader {
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * Default program's entry point
+     * @param args Program arguments
+     */
     public static void main(String[] args) {
         String musicCachePath = "";
         try {
