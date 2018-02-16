@@ -53,7 +53,7 @@ public class CacheReader {
     }
 
     /**
-     * Searches at <code>partsPaths</code> for name in MP3 metadata
+     * Searches at <code>partsPaths</code> for name in MP3 metadata.
      *
      * @param partsPaths List with file names
      * @return Name of file or <code>null</code> if not found
@@ -69,6 +69,21 @@ public class CacheReader {
     }
 
     /**
+     * Converts integer's bytes to integer.<br>
+     * Auxiliary method for parsing metadata's information to numbers.
+     * @param b Bytes of number
+     * @return Number equals these bytes
+     */
+    private static int byteArrayToInt(byte[] b) {
+        int value = 0;
+        for (int i = 0; i < b.length; i++) {
+            int shift = (b.length - 1 - i) * 8;
+            value += (b[i] & 0x000000FF) << shift;
+        }
+        return value;
+    }
+
+    /**
      * Searches at <code>filePath</code> for name in MP3 metadata
      *
      * @param filePath Path to file
@@ -79,11 +94,59 @@ public class CacheReader {
         Path path = Paths.get(filePath);
         String fileAbsolutePath = path.toAbsolutePath().toString();
 
-        Metadata.FormatName format = Metadata.getFormat(path);
+        Metadata.FormatName format = Metadata.getFormatAtStart(path);
+        File file = new File(filePath);
+        final String CHARSET = "UTF-8";
         switch (format) {
             case ID3v1:
+                try (FileInputStream fileStream = new FileInputStream(file)) {
+                    byte[] buffer = new byte[128];
+                    fileStream.read(buffer);
+                    songName = new String(buffer);
+                } catch (Exception e) {
+                    e.printStackTrace(System.err);
+                }
                 break;
             case ID3v2:
+                try (FileInputStream fileStream = new FileInputStream(file)) {
+//                    byte[] buffer = new byte[128];
+                    byte[] buffer = new byte[3];
+                    fileStream.read(buffer);
+                    String tag = new String(buffer, CHARSET);
+
+                    buffer = new byte[1];
+                    fileStream.read(buffer);
+                    int tagVersion = byteArrayToInt(buffer);
+
+                    buffer = new byte[1];
+                    fileStream.read(buffer);
+                    int tagSubVersion = byteArrayToInt(buffer);
+
+                    buffer = new byte[1];
+                    fileStream.read(buffer);
+                    int flags = byteArrayToInt(buffer);
+                    byte flagUnsync = (byte) (buffer[0] & 0b100_000);
+                    byte flagExtendedHeader = (byte) (buffer[0] & 0b010_000);
+                    byte flagExperIndicator = (byte) (buffer[0] & 0b001_000);
+
+                    buffer = new byte[4];
+
+                    fileStream.read(buffer);
+                    for (int i = 0; i < buffer.length; i++) {
+                        buffer[i] = (byte) (4 * (buffer[i] & 0b011_1111)); // unset 7 bit
+                    }
+
+                    final int size = byteArrayToInt(buffer);
+
+                    System.out.printf("== Read\n  %s v%s.%s\n  flags = %d (a:%d b:%d c:%d)\n  size = %d\n", tag, tagVersion, tagSubVersion, flags, flagUnsync, flagExtendedHeader, flagExperIndicator, size);
+
+                    byte[] meta = new byte[size];
+                    int bytesRead = fileStream.read(meta);
+                    System.out.println("Read header: " + bytesRead + " bytes");
+                    //songName = new String(meta, CHARSET);
+                } catch (Exception e) {
+                    e.printStackTrace(System.err);
+                }
                 break;
             case NONE:
             default:
@@ -91,36 +154,8 @@ public class CacheReader {
                 break;
         }
 
-        if (Metadata.containsAtStart(path)) {
-            File file = new File(filePath);
-            final int MAX_TAG_LENGTH = 4; // ID3v1 tag is 4 bytes (TAG+)
-            final String META_TAG_ID3v1 = "TAG";
-            final String META_TAG_ID3v2 = "ID3";
-
-            try (FileInputStream fileStream = new FileInputStream(file)) {
-
-            } catch (Exception e) {
-                e.printStackTrace(System.err);
-            }
-        } else if (Metadata.containsAtEnd(path)) {
-            final int META_POST_PENDED_LENGTH = 10;
-            final String META_TAG_ID3v2_REVERSED = "3DI";
-            int fileSizeInBytes = 0;
-
-            try (RandomAccessFile file = new RandomAccessFile(fileAbsolutePath, "r")) {
-                file.skipBytes(fileSizeInBytes - META_POST_PENDED_LENGTH);
-                byte[] header = new byte[META_POST_PENDED_LENGTH];
-
-                file.readFully(header, 0, META_POST_PENDED_LENGTH);
-                String tag = new String(header).toUpperCase();
-                if (tag.contains(META_TAG_ID3v2_REVERSED)) {
-
-                }
-            } catch (IOException e) {
-                //
-            }
-        } else {
-            return null;
+        if (Metadata.getFormatAtEnd(path) != Metadata.FormatName.NONE) {
+            throw new UnsupportedOperationException("Post-pended metadata formats not supported");
         }
 
         return songName;
