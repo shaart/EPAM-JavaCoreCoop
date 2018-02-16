@@ -8,7 +8,8 @@ import java.nio.file.Paths;
 public class Metadata {
     public enum FormatName {NONE, ID3v1, ID3v2}
 
-    private Metadata() {};
+    private Metadata() {
+    }
 
     private String tag;
     private String version;
@@ -30,6 +31,12 @@ public class Metadata {
     public String getTitle() {
         return title;
     }
+
+    public static final int MAX_PRE_TAG_LENGTH_BYTES = 4; // ID3v1 tag is 4 bytes (TAG+)
+    public static final String META_TAG_ID3v1 = "TAG";
+    public static final String META_TAG_ID3v2 = "ID3";
+    public static final String TAG_ID3v2_REVERSED = "3DI";
+    public static final int TAG_POST_PENDED_LENGTH_BYTES = 10;
 
     /**
      * Checks for metadata at file.
@@ -80,6 +87,7 @@ public class Metadata {
         return getFormatAtStart(filePath) != FormatName.NONE;
 
     }
+
     /**
      * Checks for metadata at start of file.
      *
@@ -90,12 +98,8 @@ public class Metadata {
         if (!Files.exists(filePath) || Files.isDirectory(filePath)) return FormatName.NONE;
         String fileAbsolutePath = filePath.toAbsolutePath().toString();
 
-        final int MAX_TAG_LENGTH = 4; // ID3v1 tag is 4 bytes (TAG+)
-        final String META_TAG_ID3v1 = "TAG";
-        final String META_TAG_ID3v2 = "ID3";
-
         try (FileInputStream file = new FileInputStream(fileAbsolutePath)) {
-            byte[] header = new byte[MAX_TAG_LENGTH]; // 3 for ID3, 4 for ID3v1
+            byte[] header = new byte[MAX_PRE_TAG_LENGTH_BYTES]; // 3 for ID3, 4 for ID3v1
 
             int readBytes = file.read(header);
             if (readBytes > 0) {
@@ -133,8 +137,6 @@ public class Metadata {
         if (!Files.exists(filePath) || Files.isDirectory(filePath)) return FormatName.NONE;
         String fileAbsolutePath = filePath.toAbsolutePath().toString();
 
-        final int TAG_POST_PENDED_LENGTH = 10;
-        final String META_TAG_ID3v2_REVERSED = "3DI";
         int fileSizeInBytes = 0;
         try {
             fileSizeInBytes = (int) Files.size(filePath);
@@ -142,12 +144,12 @@ public class Metadata {
             return FormatName.NONE;
         }
         try (RandomAccessFile file = new RandomAccessFile(fileAbsolutePath, "r")) {
-            file.skipBytes(fileSizeInBytes - TAG_POST_PENDED_LENGTH);
-            byte[] header = new byte[TAG_POST_PENDED_LENGTH];
+            file.skipBytes(fileSizeInBytes - TAG_POST_PENDED_LENGTH_BYTES);
+            byte[] header = new byte[TAG_POST_PENDED_LENGTH_BYTES];
 
-            file.readFully(header, 0, TAG_POST_PENDED_LENGTH);
+            file.readFully(header, 0, TAG_POST_PENDED_LENGTH_BYTES);
             String tag = new String(header).toUpperCase();
-            if (tag.contains(META_TAG_ID3v2_REVERSED)) {
+            if (tag.contains(TAG_ID3v2_REVERSED)) {
                 return FormatName.ID3v2;
             }
         } catch (IOException e) {
