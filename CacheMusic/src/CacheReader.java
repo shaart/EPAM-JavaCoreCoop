@@ -76,22 +76,6 @@ public class CacheReader {
     }
 
     /**
-     * Converts integer's bytes to integer.<br>
-     * Auxiliary method for parsing metadata's information to numbers.
-     *
-     * @param b Bytes of number
-     * @return Number equals these bytes
-     */
-    private static int byteArrayToInt(byte[] b) {
-        int value = 0;
-        for (int i = 0; i < b.length; i++) {
-            int shift = (b.length - 1 - i) * 8;
-            value += (b[i] & 0x000000FF) << shift;
-        }
-        return value;
-    }
-
-    /**
      * Searches at <code>filePath</code> for name in MP3 metadata
      *
      * @param filePath Path to file
@@ -104,16 +88,12 @@ public class CacheReader {
 
         Metadata.FormatName format = Metadata.getFormatAtStart(path);
         File file = new File(filePath);
-        final String CHARSET = "UTF-8";
-        byte[] buffer;
         String songArtist = null;
-        boolean artistFound = false;
         String songTitle = null;
-        boolean titleFound = false;
         switch (format) {
             case ID3v1:
                 try (FileInputStream fileStream = new FileInputStream(file)) {
-                    buffer = new byte[128];
+                    byte[] buffer = new byte[128];
                     fileStream.read(buffer);
                     songName = new String(buffer);
                     throw new UnsupportedOperationException("ID3v1 headers not realized");
@@ -122,96 +102,9 @@ public class CacheReader {
                 }
                 break;
             case ID3v2:
-                try (FileInputStream fileStream = new FileInputStream(file)) {
-                    buffer = new byte[3];
-                    fileStream.read(buffer);
-                    String tag = new String(buffer, CHARSET);
-
-                    buffer = new byte[1];
-                    fileStream.read(buffer);
-                    int tagVersion = buffer[0];
-
-                    buffer = new byte[1];
-                    fileStream.read(buffer);
-                    int tagSubVersion = buffer[0];
-
-                    buffer = new byte[1];
-                    fileStream.read(buffer);
-                    int flags = byteArrayToInt(buffer);
-                    byte flagUnsync = (byte) (buffer[0] & 0b100_000);
-                    byte flagExtendedHeader = (byte) (buffer[0] & 0b010_000);
-                    byte flagExperIndicator = (byte) (buffer[0] & 0b001_000);
-
-                    buffer = new byte[4];
-
-                    fileStream.read(buffer);
-                    for (int i = 0; i < buffer.length; i++) {
-                        buffer[i] = (byte) (buffer[i] & 0b011_1111); // unset 7 bit
-                    }
-
-                    final int headerSize = byteArrayToInt(buffer);
-                    System.out.printf("== Read\n  %s v%s.%s\n  flags = %d (a:%d b:%d c:%d)\n  headerSize = %d\n", tag, tagVersion, tagSubVersion, flags, flagUnsync, flagExtendedHeader, flagExperIndicator, headerSize);
-
-                    byte[] header = new byte[headerSize];
-                    int bytesRead = fileStream.read(header);
-                    System.out.println("Read header: " + bytesRead + " bytes");
-
-                    final String TAGS_ENCODING = "UTF-8";
-
-                    for (int i = 0; i < bytesRead && (!artistFound || !titleFound); ) {
-                        byte[] frameIDBytes = new byte[4]; // 4 letter TAGS
-                        System.arraycopy(header, i, frameIDBytes, 0, frameIDBytes.length);// buffer = Arrays.copyOf(header, 4, 4);
-                        String frameID = new String(frameIDBytes, TAGS_ENCODING);
-                        System.out.println("\nFrame id: " + frameID);
-                        byte[] frameSizeBytes = new byte[4];
-                        System.arraycopy(header, i + 4, frameSizeBytes, 0, frameSizeBytes.length);
-                        final int frameSize = byteArrayToInt(frameSizeBytes);
-                        System.out.println("Frame size: " + frameSize);
-                        byte[] frameFlags = new byte[2];
-                        System.arraycopy(header, i + 8, frameFlags, 0, frameFlags.length);
-                        byte[] encodingByte = new byte[1];
-                        System.arraycopy(header, i + 10, encodingByte, 0, encodingByte.length);
-                        int encoding = encodingByte[0];
-                        String codingName;
-                        switch (encoding) {
-                            case 0:
-                                codingName = "ISO_8859_1";
-                                break;
-                            case 1:
-                                codingName = "UTF_16";
-                                break;
-                            case 2:
-                                codingName = "UTF_16BE";
-                                break;
-                            case 3:
-                                codingName = "UTF-8";
-                                break;
-                            default:
-                                codingName = TAGS_ENCODING;
-                                break;
-                        }
-                        buffer = new byte[frameSize - encodingByte.length];
-                        System.arraycopy(header, i + 11, buffer, 0, buffer.length);
-                        String frameData = new String(buffer, codingName);
-                        System.out.println("Frame data + " + frameData);
-                        i += 10 + frameSize;
-
-                        switch (frameID.toUpperCase()) {
-                            case "TIT2":
-                                songTitle = frameData;
-                                titleFound = true;
-                                break;
-                            case "TPE1":
-                                songArtist = frameData;
-                                artistFound = true;
-                                break;
-                            default:
-                                break;
-                        }
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace(System.err);
-                }
+                Metadata data = Metadata.readID3v23(filePath);
+                songArtist = data.getArtist();
+                songTitle = data.getTitle();
                 break;
             case NONE:
             default:
