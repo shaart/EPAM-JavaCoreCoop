@@ -63,7 +63,7 @@ public class CacheReader {
      * Searches at <code>partsPaths</code> for name in MP3 metadata.
      *
      * @param partsPaths List with file names
-     * @return Name of file or <code>null</code> if not found
+     * @return First found name of file or <code>null</code> if not found
      */
     public static String searchSongName(List<String> partsPaths) {
         String songName = null;
@@ -105,20 +105,25 @@ public class CacheReader {
         Metadata.FormatName format = Metadata.getFormatAtStart(path);
         File file = new File(filePath);
         final String CHARSET = "UTF-8";
+        byte[] buffer;
+        String songArtist = null;
+        boolean artistFound = false;
+        String songTitle = null;
+        boolean titleFound = false;
         switch (format) {
             case ID3v1:
                 try (FileInputStream fileStream = new FileInputStream(file)) {
-                    byte[] buffer = new byte[128];
+                    buffer = new byte[128];
                     fileStream.read(buffer);
                     songName = new String(buffer);
+                    throw new UnsupportedOperationException("ID3v1 headers not realized");
                 } catch (Exception e) {
                     e.printStackTrace(System.err);
                 }
                 break;
             case ID3v2:
                 try (FileInputStream fileStream = new FileInputStream(file)) {
-//                    byte[] buffer = new byte[128];
-                    byte[] buffer = new byte[3];
+                    buffer = new byte[3];
                     fileStream.read(buffer);
                     String tag = new String(buffer, CHARSET);
 
@@ -147,46 +152,63 @@ public class CacheReader {
                     final int headerSize = byteArrayToInt(buffer);
                     System.out.printf("== Read\n  %s v%s.%s\n  flags = %d (a:%d b:%d c:%d)\n  headerSize = %d\n", tag, tagVersion, tagSubVersion, flags, flagUnsync, flagExtendedHeader, flagExperIndicator, headerSize);
 
-                    //
-                    // HERE WE MUST READ META AND PARSE TO 'TITLE' HEADER AND 'ARTIST' HEADER
-                    // AND SEEKING FOR ENCODING
-                    //
-                    byte[] remainedHeader = new byte[headerSize];
-                    int bytesRead = fileStream.read(remainedHeader);
-
+                    byte[] header = new byte[headerSize];
+                    int bytesRead = fileStream.read(header);
                     System.out.println("Read header: " + bytesRead + " bytes");
 
-//                    System.arraycopy(remainedHeader, 0, buffer, 0, 4);// buffer = Arrays.copyOf(remainedHeader, 4, 4);
-//                    String read = new String(buffer);
-                    String codingName;
-                    int encoding = buffer[0];
-                    System.out.println();
-                    switch (encoding) {
-                        case 0:
-                            System.out.println("ISO_8859_1 encoding found - " + encoding);
-                            codingName = "ISO_8859_1";
-                            break;
-                        case 1:
-                            System.out.println("UTF_16 encoding found - " + encoding);
-                            codingName = "UTF_16";
-                            break;
-                        case 2:
-                            System.out.println("UTF_16BE encoding found - " + encoding);
-                            codingName = "UTF_16BE";
-                            break;
-                        case 3:
-                            System.out.println(" encoding found - " + encoding);
-                            codingName = "UTF-8";
-                            break;
-                        default:
-                            codingName = "UTF-8";
-                            break;
-                    }
+                    final String TAGS_ENCODING = "UTF-8";
 
-                    //
-                    // THEN MAKE FROM THEM "[artist] - [title].mp3" NAME
-                    //
-                    //songName = new String(remainedHeader, CHARSET);
+                    for (int i = 0; i < bytesRead && (!artistFound || !titleFound); ) {
+                        byte[] frameIDBytes = new byte[4]; // 4 letter TAGS
+                        System.arraycopy(header, i, frameIDBytes, 0, frameIDBytes.length);// buffer = Arrays.copyOf(header, 4, 4);
+                        String frameID = new String(frameIDBytes, TAGS_ENCODING);
+                        System.out.println("\nFrame id: " + frameID);
+                        byte[] frameSizeBytes = new byte[4];
+                        System.arraycopy(header, i + 4, frameSizeBytes, 0, frameSizeBytes.length);
+                        final int frameSize = byteArrayToInt(frameSizeBytes);
+                        System.out.println("Frame size: " + frameSize);
+                        byte[] frameFlags = new byte[2];
+                        System.arraycopy(header, i + 8, frameFlags, 0, frameFlags.length);
+                        byte[] encodingByte = new byte[1];
+                        System.arraycopy(header, i + 10, encodingByte, 0, encodingByte.length);
+                        int encoding = encodingByte[0];
+                        String codingName;
+                        switch (encoding) {
+                            case 0:
+                                codingName = "ISO_8859_1";
+                                break;
+                            case 1:
+                                codingName = "UTF_16";
+                                break;
+                            case 2:
+                                codingName = "UTF_16BE";
+                                break;
+                            case 3:
+                                codingName = "UTF-8";
+                                break;
+                            default:
+                                codingName = TAGS_ENCODING;
+                                break;
+                        }
+                        buffer = new byte[frameSize - encodingByte.length];
+                        System.arraycopy(header, i + 11, buffer, 0, buffer.length);
+                        String frameData = new String(buffer, codingName);
+                        System.out.println("Frame data + " + frameData);
+                        i += 10 + frameSize;
+
+                        switch (frameID.toUpperCase()) {
+                            case "TIT2":
+                                songTitle = frameData;
+                                titleFound = true;
+                                break;
+                            case "TPE1":
+                                songArtist = frameData;
+                                artistFound = true;
+                                break;
+                            default:
+                                break;
+                        }
+                    }
                 } catch (Exception e) {
                     e.printStackTrace(System.err);
                 }
@@ -197,9 +219,24 @@ public class CacheReader {
                 break;
         }
 
-        if (Metadata.getFormatAtEnd(path) != Metadata.FormatName.NONE) {
-            throw new UnsupportedOperationException("Post-pended metadata formats not supported");
+        if (songArtist != null) {
+            songName = songArtist;
         }
+
+        if (songTitle != null) {
+            if (songArtist != null) songName += " - ";
+            songName += songTitle;
+        }
+
+        if (songName == null) {
+            if (Metadata.getFormatAtEnd(path) != Metadata.FormatName.NONE) {
+                throw new UnsupportedOperationException("Post-pended metadata formats not supported");
+            }
+        }
+
+        if (songName != null)
+            songName += ".mp3";
+        System.out.println("Result song name: " + songName);
 
         return songName;
     }
