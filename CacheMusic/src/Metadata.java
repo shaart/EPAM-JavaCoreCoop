@@ -72,25 +72,25 @@ public class Metadata {
             }
 
             final int headerSize = byteArrayToInt(buffer);
-            System.out.printf("== Read\n  %s v%s.%s\n  flags = %d (a:%d b:%d c:%d)\n  headerSize = %d\n",
-                    meta.tag, meta.version, tagSubVersion,
-                    flags, flagUnsync, flagExtendedHeader, flagExperIndicator,
-                    headerSize);
+//            System.out.printf("== Read\n  %s v%s.%s\n  flags = %d (a:%d b:%d c:%d)\n  headerSize = %d\n",
+//                    meta.tag, meta.version, tagSubVersion,
+//                    flags, flagUnsync, flagExtendedHeader, flagExperIndicator,
+//                    headerSize);
 
             byte[] header = new byte[headerSize];
             int bytesRead = fileStream.read(header);
-            System.out.println("Read header: " + bytesRead + " bytes");
+//            System.out.println("Read header: " + bytesRead + " bytes");
 
             int frameRead;
             for (int i = 0; i < bytesRead; i += 10 + frameRead) {
                 byte[] frameIDBytes = new byte[4]; // 4 letter TAGS
                 System.arraycopy(header, i, frameIDBytes, 0, frameIDBytes.length);// buffer = Arrays.copyOf(header, 4, 4);
                 String frameID = new String(frameIDBytes, TAGS_ENCODING);
-                System.out.println("\nFrame id: " + frameID);
+//                System.out.println("\nFrame id: " + frameID);
                 byte[] frameSizeBytes = new byte[4];
                 System.arraycopy(header, i + 4, frameSizeBytes, 0, frameSizeBytes.length);
                 final int frameSize = byteArrayToInt(frameSizeBytes);
-                System.out.println("Frame size: " + frameSize);
+//                System.out.println("Frame size: " + frameSize);
 
                 byte[] frameFlags = new byte[2];
                 System.arraycopy(header, i + 8, frameFlags, 0, frameFlags.length);
@@ -122,7 +122,7 @@ public class Metadata {
                         System.arraycopy(header, i + 11, buffer, 0, buffer.length);
                     }
                     String frameData = new String(buffer, codingName);
-                    System.out.println("Frame data: " + frameData);
+//                    System.out.println("Frame data: " + frameData);
 
                     switch (frameID.toUpperCase()) {
                         case "TIT2":
