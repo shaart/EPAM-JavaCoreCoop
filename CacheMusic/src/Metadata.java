@@ -13,9 +13,36 @@ public class Metadata {
 
     private FormatName format = FormatName.NONE;
     private String tag = null;
-    private String version = null;
+    private int version;
+    private int subversion;
     private String artist = null;
     private String title = null;
+
+    private boolean flagUnsync = false;
+    private boolean flagExtendedHeader = false;
+    private boolean flagExperIndicator = false;
+
+    public String getTag() {
+        return tag;
+    }
+
+    public FormatName getFormat() {
+        return format;
+    }
+
+    public String getArtist() {
+        return artist;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public static final int MAX_PRE_TAG_LENGTH_BYTES = 4; // ID3v1 tag is 4 bytes (TAG+)
+    public static final String META_TAG_ID3v1 = "TAG";
+    public static final String META_TAG_ID3v2 = "ID3";
+    public static final String TAG_ID3v2_REVERSED = "3DI";
+    public static final int TAG_POST_PENDED_LENGTH_BYTES = 10;
 
     /**
      * Converts integer's bytes to integer.<br>
@@ -45,6 +72,11 @@ public class Metadata {
         final int BYTES_FLAGS_LENGTH = 1;
         final int BYTES_HEADER_SIZE_LENGTH = 4;
 
+        final int BYTES_FRAME_ID_LENGTH = 4;
+        final int BYTES_FRAME_SIZE_LENGTH = 4;
+        final int BYTES_FRAME_FLAGS_LENGTH = 2;
+        final int BYTES_ENCODING_LENGTH = 1;
+
         try (FileInputStream fileStream = new FileInputStream(file)) {
             buffer = new byte[BYTES_TAG_LENGTH];
             fileStream.read(buffer);
@@ -52,18 +84,21 @@ public class Metadata {
 
             buffer = new byte[BYTES_VERSION_LENGTH];
             fileStream.read(buffer);
-            meta.version = Integer.toString(buffer[0]);
+            meta.version = buffer[0];
 
             buffer = new byte[BYTES_SUBVERSION_LENGTH];
             fileStream.read(buffer);
-            int tagSubVersion = buffer[0];
+            meta.subversion = buffer[0];
 
             buffer = new byte[BYTES_FLAGS_LENGTH];
             fileStream.read(buffer);
             int flags = byteArrayToInt(buffer);
-            byte flagUnsync = (byte) (buffer[0] & 0b100_000);
-            byte flagExtendedHeader = (byte) (buffer[0] & 0b010_000);
-            byte flagExperIndicator = (byte) (buffer[0] & 0b001_000);
+            int unsyncBit = 0b100_0000;
+            int extendedHeaderBit = 0b010_0000;
+            int experimentalBit = 0b001_0000;
+            meta.flagUnsync = (buffer[0] & unsyncBit) == unsyncBit;
+            meta.flagExtendedHeader = (buffer[0] & extendedHeaderBit) == extendedHeaderBit;
+            meta.flagExperIndicator = (buffer[0] & experimentalBit) == experimentalBit;
 
             buffer = new byte[BYTES_HEADER_SIZE_LENGTH];
             fileStream.read(buffer);
@@ -72,31 +107,44 @@ public class Metadata {
             }
 
             final int headerSize = byteArrayToInt(buffer);
-//            System.out.printf("== Read\n  %s v%s.%s\n  flags = %d (a:%d b:%d c:%d)\n  headerSize = %d\n",
-//                    meta.tag, meta.version, tagSubVersion,
-//                    flags, flagUnsync, flagExtendedHeader, flagExperIndicator,
-//                    headerSize);
 
             byte[] header = new byte[headerSize];
             int bytesRead = fileStream.read(header);
-//            System.out.println("Read header: " + bytesRead + " bytes");
 
-            int frameRead;
-            for (int i = 0; i < bytesRead; i += 10 + frameRead) {
-                byte[] frameIDBytes = new byte[4]; // 4 letter TAGS
-                System.arraycopy(header, i, frameIDBytes, 0, frameIDBytes.length);// buffer = Arrays.copyOf(header, 4, 4);
-                String frameID = new String(frameIDBytes, TAGS_ENCODING);
-//                System.out.println("\nFrame id: " + frameID);
-                byte[] frameSizeBytes = new byte[4];
-                System.arraycopy(header, i + 4, frameSizeBytes, 0, frameSizeBytes.length);
-                final int frameSize = byteArrayToInt(frameSizeBytes);
-//                System.out.println("Frame size: " + frameSize);
+            int offset;
+            byte[] frameIDBytes;
+            String frameID;
+            byte[] frameSizeBytes;
+            int frameDataSize;
+            byte[] frameFlagBytes;
+            byte[] encodingByte;
+            int encoding;
+            int remainedFrameSize;
+            for (long pos = 0; pos < bytesRead; pos += offset) {
+                if (pos < 0) break; // overflow
 
-                byte[] frameFlags = new byte[2];
-                System.arraycopy(header, i + 8, frameFlags, 0, frameFlags.length);
-                byte[] encodingByte = new byte[1];
-                System.arraycopy(header, i + 10, encodingByte, 0, encodingByte.length);
-                int encoding = encodingByte[0];
+                offset = 0;
+
+                frameIDBytes = new byte[BYTES_FRAME_ID_LENGTH];
+                System.arraycopy(header, (int) pos, frameIDBytes, 0, frameIDBytes.length);
+                frameID = new String(frameIDBytes, TAGS_ENCODING);
+                offset += BYTES_FRAME_ID_LENGTH;
+
+                frameSizeBytes = new byte[BYTES_FRAME_SIZE_LENGTH];
+                System.arraycopy(header, (int) pos + offset, frameSizeBytes, 0, frameSizeBytes.length);
+
+                frameDataSize = byteArrayToInt(frameSizeBytes);
+                offset += BYTES_FRAME_SIZE_LENGTH;
+
+                frameFlagBytes = new byte[BYTES_FRAME_FLAGS_LENGTH];
+                System.arraycopy(header, (int) pos + offset, frameFlagBytes, 0, frameFlagBytes.length);
+                offset += BYTES_FRAME_FLAGS_LENGTH;
+
+                encodingByte = new byte[BYTES_ENCODING_LENGTH];
+                System.arraycopy(header, (int) pos + offset, encodingByte, 0, encodingByte.length);
+                offset += frameDataSize;
+
+                encoding = encodingByte[0];
                 String codingName;
                 switch (encoding) {
                     case 0:
@@ -115,56 +163,34 @@ public class Metadata {
                         codingName = TAGS_ENCODING;
                         break;
                 }
-                final int remainedFrameSize = frameSize - encodingByte.length;
+                remainedFrameSize = frameDataSize - encodingByte.length;
                 if (remainedFrameSize > 0) {
                     buffer = new byte[remainedFrameSize];
-                    if (header.length >= i + 11 + buffer.length) {
-                        System.arraycopy(header, i + 11, buffer, 0, buffer.length);
-                    }
+                    System.arraycopy(header, (int) pos + 11, buffer, 0, buffer.length);
                     String frameData = new String(buffer, codingName);
-//                    System.out.println("Frame data: " + frameData);
 
                     switch (frameID.toUpperCase()) {
-                        case "TIT2":
+                        case ID3v23.TITLE:
                             meta.title = frameData;
                             break;
-                        case "TPE1":
+                        case ID3v23.ARTIST:
                             meta.artist = frameData;
                             break;
                         default:
                             break;
                     }
                 }
-                frameRead = frameSize;
             }
+        } catch (ArrayIndexOutOfBoundsException e) {
+            // Data ended suddenly or header was incorrect
+            // Nothing to do - end read header
+            e.printStackTrace();
         } catch (Exception e) {
             e.printStackTrace(System.err);
         }
 
         return meta;
     }
-
-    public String getTag() {
-        return tag;
-    }
-
-    public FormatName getFormat() {
-        return format;
-    }
-
-    public String getArtist() {
-        return artist;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public static final int MAX_PRE_TAG_LENGTH_BYTES = 4; // ID3v1 tag is 4 bytes (TAG+)
-    public static final String META_TAG_ID3v1 = "TAG";
-    public static final String META_TAG_ID3v2 = "ID3";
-    public static final String TAG_ID3v2_REVERSED = "3DI";
-    public static final int TAG_POST_PENDED_LENGTH_BYTES = 10;
 
     /**
      * Checks for metadata at file.
@@ -298,5 +324,6 @@ class ID3v1 {
 }
 
 class ID3v23 {
-
+    public static final String ARTIST = "TPE1";
+    public static final String TITLE = "TIT2";
 }
