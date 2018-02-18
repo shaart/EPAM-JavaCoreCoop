@@ -90,26 +90,39 @@ public class CacheReader {
         File file = new File(filePath);
         String songArtist = null;
         String songTitle = null;
+        Metadata metadata = null;
         switch (format) {
             case ID3v1:
-                try (FileInputStream fileStream = new FileInputStream(file)) {
-                    byte[] buffer = new byte[128];
-                    fileStream.read(buffer);
-                    songName = new String(buffer);
-                    throw new UnsupportedOperationException("ID3v1 headers not realized");
-                } catch (Exception e) {
-                    e.printStackTrace(System.err);
-                }
+                metadata = Metadata.readID3v1(filePath);
+                songArtist = metadata.getArtist();
+                songTitle = metadata.getTitle();
                 break;
             case ID3v2:
-                Metadata data = Metadata.readID3v23(filePath);
-                songArtist = data.getArtist();
-                songTitle = data.getTitle();
+                metadata = Metadata.readID3v23(filePath);
                 break;
             case NONE:
             default:
                 songName = null;
                 break;
+        }
+        if (metadata != null) {
+            songArtist = metadata.getArtist();
+            songTitle = metadata.getTitle();
+        }
+
+        if (songName == null) {
+            format = Metadata.getFormatAtEnd(path);
+            switch (format) {
+                case ID3v1:
+                    metadata = Metadata.readID3v1(filePath);
+                    if (metadata != null) {
+                        songArtist = metadata.getArtist();
+                        songTitle = metadata.getTitle();
+                    }
+                    break;
+                default:
+                    throw new UnsupportedOperationException("Only ID3v1 post-pended format supported");
+            }
         }
 
         if (songArtist != null) {
@@ -119,12 +132,6 @@ public class CacheReader {
         if (songTitle != null) {
             if (songArtist != null) songName += " - ";
             songName += songTitle;
-        }
-
-        if (songName == null) {
-            if (Metadata.getFormatAtEnd(path) != Metadata.FormatName.NONE) {
-                throw new UnsupportedOperationException("Post-pended metadata formats not supported");
-            }
         }
 
         if (songName != null)

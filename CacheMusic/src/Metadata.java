@@ -1,3 +1,5 @@
+import javax.print.attribute.standard.MediaPrintableArea;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -58,6 +60,75 @@ public class Metadata {
             value += (b[i] & 0x000000FF) << shift;
         }
         return value;
+    }
+
+    private static Metadata parseID3v1(byte[] header) {
+        Metadata meta = null;
+        if (header.length > 0) {
+            meta = new Metadata();
+            final String TAGS_ENCODING = "UTF-8";
+            final String DATA_ENCODING = "ISO_8859_1";
+
+            byte[] buffer;
+            try {
+                int offset = 0;
+                buffer = new byte[ID3v1.TAG_LENGTH_BYTES];
+                System.arraycopy(header, offset, buffer, 0, buffer.length);
+                meta.tag = new String(buffer, TAGS_ENCODING);
+                offset += ID3v1.TAG_LENGTH_BYTES;
+                if (meta.tag.toUpperCase().equals("TAG")) {
+                    meta.format = FormatName.ID3v1;
+
+                    buffer = new byte[ID3v1.TITLE_LENGTH_BYTES];
+                    System.arraycopy(header, offset, buffer, 0, buffer.length);
+                    meta.title = new String(buffer, DATA_ENCODING);
+                    offset += ID3v1.TITLE_LENGTH_BYTES;
+
+                    buffer = new byte[ID3v1.ARTIST_LENGTH_BYTES];
+                    System.arraycopy(header, offset, buffer, 0, buffer.length);
+                    meta.artist = new String(buffer, DATA_ENCODING);
+                    offset += ID3v1.ARTIST_LENGTH_BYTES;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        return meta;
+    }
+
+    public static Metadata readID3v1(String file) {
+        Metadata meta = null;
+
+        final String TAGS_ENCODING = "UTF-8";
+        byte[] buffer;
+        byte[] header = new byte[ID3v1.HEADER_LENGTH];
+        try (FileInputStream fileStream = new FileInputStream(file)) {
+            int readBytes = fileStream.read(header);
+            if (readBytes > 0) {
+                buffer = new byte[ID3v1.TAG_LENGTH_BYTES];
+                System.arraycopy(header, 0, buffer, 0, buffer.length);
+                if (new String(buffer, TAGS_ENCODING).equals("TAG")) {
+                    meta = parseID3v1(header);
+                }
+            }
+            if (meta == null) {
+                File f = new File(file);
+                fileStream.skip(f.length() - readBytes - header.length);
+                readBytes = fileStream.read(header);
+                if (readBytes > 0) {
+                    buffer = new byte[ID3v1.TAG_LENGTH_BYTES];
+                    System.arraycopy(header, 0, buffer, 0, buffer.length);
+                    if (new String(buffer, TAGS_ENCODING).equals("TAG")) {
+                        meta = parseID3v1(header);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace(System.err);
+        }
+
+        return meta;
     }
 
     public static Metadata readID3v23(String file) {
@@ -184,7 +255,7 @@ public class Metadata {
         } catch (ArrayIndexOutOfBoundsException e) {
             // Data ended suddenly or header was incorrect
             // Nothing to do - end read header
-            e.printStackTrace();
+//            e.printStackTrace();
         } catch (Exception e) {
             e.printStackTrace(System.err);
         }
@@ -310,11 +381,34 @@ public class Metadata {
             return FormatName.NONE;
         }
 
+        try (RandomAccessFile file = new RandomAccessFile(fileAbsolutePath, "r")) {
+            file.skipBytes(fileSizeInBytes - ID3v1.HEADER_LENGTH);
+            byte[] header = new byte[ID3v1.HEADER_LENGTH];
+
+            file.readFully(header, 0, header.length);
+            String tag = new String(header).toUpperCase();
+            if (tag.contains("TAG")) {
+                return FormatName.ID3v1;
+            }
+        } catch (IOException e) {
+            return FormatName.NONE;
+        }
+
         return FormatName.NONE;
     }
 }
 
 class ID3v1 {
+    public static final int HEADER_LENGTH = 128;
+
+    public static final int TAG_LENGTH_BYTES = 3;
+    public static final int TITLE_LENGTH_BYTES = 30;
+    public static final int ARTIST_LENGTH_BYTES = 30;
+    public static final int ALBUM_LENGTH_BYTES = 30;
+    public static final int YEAR_LENGTH_BYTES = 4;
+    public static final int COMMENT_LENGTH_BYTES = 30; // here is also Track # at last 2 bytes
+    public static final int GENRE_LENGTH_BYTES = 1;
+
     public static final String ARTIST = "TPE1";
     public static final String TITLE = "TIT2";
     public static final String ALBUM = "TALB";
