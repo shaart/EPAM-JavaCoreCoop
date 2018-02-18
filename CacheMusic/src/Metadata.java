@@ -382,6 +382,7 @@ public class Metadata {
     public static Metadata readID3v23(String file) {
         Metadata meta = new Metadata();
         final String TAGS_ENCODING = "UTF-8";
+        final int MAX_FILE_SIZE = 1024 * 1024;
         byte[] buffer;
 
         try (FileInputStream fileStream = new FileInputStream(file)) {
@@ -473,7 +474,8 @@ public class Metadata {
                             break;
                     }
                     remainedFrameSize = frameDataSize - encodingByte.length;
-                    if (remainedFrameSize > 0) {
+
+                    if (remainedFrameSize > 0 && remainedFrameSize <= MAX_FILE_SIZE) {
                         buffer = new byte[remainedFrameSize];
                         System.arraycopy(header, (int) pos + 11, buffer, 0, buffer.length);
                         String frameData = new String(buffer, codingName);
@@ -497,6 +499,8 @@ public class Metadata {
 //            e.printStackTrace();
         } catch (Exception e) {
             e.printStackTrace(System.err);
+        } catch (Error e) {
+            e.printStackTrace();
         }
 
         return meta;
