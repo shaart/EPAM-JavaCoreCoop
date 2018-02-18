@@ -4,85 +4,86 @@ import java.util.List;
 
 public class FileBuilder {
 
-    private static String cashFolderPath = "";
-    private static String outputFolder = "D:\\Music";
+    //private static String cashFolderPath = "";
+    // private static Path outputFolder = Paths.get(".", "Tracks");
 
     private static final String MP3 = ".mp3";
 
-   /*
-    public String getCashFolderPath() {
-        return cashFolderPath;
-    }
-
-    public String getOutputFolder() {
-        return outputFolder;
-    }
-
-    public void setOutputFolder(String outputFolder) {
-        this.outputFolder = outputFolder;
-    }
-
-    private FileBuilder() {}
-
-    */
-
-
-
-    private static String songEnumerator(String outputFolder, String fileName){
-        int number =1;
-        while (Files.exists(Paths.get(outputFolder + "\\" + fileName + number + MP3))){
+    /**
+     * Make an unique name for every track
+     *
+     * @param outputFolder folder which will contain file with current <code>fileName</code>
+     * @param fileName     default file name
+     * @return a path contains an unique name for track
+     */
+    private static Path songEnumerator(String outputFolder, String fileName) {
+        int number = 1;
+        while (Files.exists(Paths.get(outputFolder, fileName + number + MP3))) {
             number++;
-            //fileName = fileName + "(" + number + ")";
         }
-        return outputFolder + "\\" + fileName + number;
+        return Paths.get(outputFolder, fileName + number);
+    }
+
+    /**
+     * Collect track parts to full track; Additional parameteres;
+     *
+     * @param files track parts
+     * @throws IOException
+     */
+    public static void build(List<String> files) throws IOException {
+
+        build(files, Paths.get(".", "Tracks"), "Unnamed");
     }
 
 
-
-    public static void build(List<String> files) throws IOException{
-
-        build(files, "Default", outputFolder );
-    }
-
-
-
-
+    /**
+     * Collect track parts to full track; Additional parameteres;
+     *
+     * @param files    track parts
+     * @param fileName name of full track which we get finally
+     * @throws IOException
+     */
 
     public static void build(List<String> files, String fileName) throws IOException {
 
-        build(files,fileName, outputFolder);
+        build(files, outputFolder, fileName);
     }
 
 
+    /**
+     * Collect track parts to full track; Additional parameteres;
+     *
+     * @param files        track parts
+     * @param fileName     name of full track which we get finally
+     * @param outputFolder folder that will contain final track
+     * @throws IOException
+     */
+
+    public static void build(List<String> files, Path outputFolder, String fileName) throws IOException {
 
 
+        if (Files.notExist(outputFolder))
+            Files.createDirectories(outputFolder);
 
-
-    public static void build(List<String> files, String fileName, String outputFolder) throws IOException {
-
-        Path outSong = Paths.get(outputFolder + "\\" + fileName+ MP3);
+        Path outSong = Paths.get(outputFolder, fileName + MP3);
 
         if (Files.notExists(outSong))
             Files.createFile(outSong);
         else
-            outSong = Files.createFile( Paths.get(songEnumerator(outputFolder,fileName) + MP3));
-
-       // OutputStream out = Files.newOutputStream(outSong, CREATE, APPEND);
+            outSong = Files.createFile(Paths.get(songEnumerator(outputFolder, fileName) + MP3));
 
 
-            for (String str: files){
+        for (String str : files) {
 
-                Path tmp = Paths.get(str);
-                System.out.println(tmp.toString());
+            Path tmp = Paths.get(str);
 
-                if (Files.isWritable(outSong))
-                    try {
-                        Files.write(outSong, Files.readAllBytes(tmp),StandardOpenOption.APPEND);
-                        //Files.copy(outSong, tmp, StandardCopyOption.REPLACE_EXISTING);
-                    } catch (IOException e){
-                        e.printStackTrace();
-                        System.out.println("не вышло");
+            if (Files.isWritable(outSong))
+                try {
+                    Files.write(outSong, Files.readAllBytes(tmp), StandardOpenOption.APPEND);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    System.err.println("Error while song building " + fileName);
                 }
-            }
+        }
     }
 }
