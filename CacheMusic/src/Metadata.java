@@ -47,15 +47,16 @@ class ID3v23 {
  * Class for working with ID3 metadata
  */
 public class Metadata {
+
     public enum FormatName {NONE, ID3v1, ID3v2, ID3v23}
 
     // FIELDS
-    private FormatName format = FormatName.NONE;
-    private String tag = null;
-    private int version;
-    private int subversion;
     private String artist = null;
+    private String tag = null;
+    private FormatName format = FormatName.NONE;
     private String title = null;
+    private int subversion;
+    private int version;
 
     private boolean flagUnsync = false;
     private boolean flagExtendedHeader = false;
@@ -67,57 +68,29 @@ public class Metadata {
     // CONSTANTS
     private static final int MAX_PRE_TAG_LENGTH_BYTES = 3;
 
-    public String getTag() {
-        return tag;
+    // GETTERS
+    public String getArtist() {
+        return artist;
     }
 
     public FormatName getFormat() {
         return format;
     }
 
-    public String getArtist() {
-        return artist;
+    public int getSubversion() {
+        return subversion;
+    }
+
+    public String getTag() {
+        return tag;
     }
 
     public String getTitle() {
         return title;
     }
 
-    /**
-     * Reads metadata from file.
-     *
-     * @param filePath Path to file
-     * @return Metadata information. If metadata not found returns <code>null</code>.
-     */
-    public static Metadata read(String filePath) {
-        Metadata metadata = null;
-        Path path = Paths.get(filePath);
-        Metadata.FormatName format = Metadata.getFormatAtStart(path);
-        switch (format) {
-            case ID3v1:
-                metadata = Metadata.readID3v1(filePath);
-                break;
-            case ID3v2:
-            case ID3v23:
-                metadata = Metadata.readID3v23(filePath);
-                break;
-            case NONE:
-            default:
-                break;
-        }
-
-        if (metadata == null) {
-            format = Metadata.getFormatAtEnd(path);
-            switch (format) {
-                case ID3v1:
-                    metadata = Metadata.readID3v1(filePath);
-                    break;
-                default:
-                    throw new UnsupportedOperationException("Only ID3v1 post-pended format supported");
-            }
-        }
-
-        return metadata;
+    public int getVersion() {
+        return version;
     }
 
     /**
@@ -134,6 +107,143 @@ public class Metadata {
             value += (b[i] & 0x000000FF) << shift;
         }
         return value;
+    }
+
+    /**
+     * Checks for metadata at file.
+     *
+     * @param filePath Path to file
+     * @return <code>true</code> - if contains metadata<br><code>false</code> - if not found
+     */
+    public static boolean contains(String filePath) {
+        return contains(Paths.get(filePath));
+    }
+
+    /**
+     * Checks for metadata at file.
+     *
+     * @param filePath Path to file
+     * @return <code>true</code> - if contains metadata<br><code>false</code> - if not found
+     */
+    public static boolean contains(Path filePath) {
+        return containsAtStart(filePath) || containsAtEnd(filePath);
+    }
+
+    /**
+     * Checks for metadata at start of file.
+     *
+     * @param filePath Path to file
+     * @return <code>true</code> - if contains metadata<br><code>false</code> - if not found
+     */
+    public static boolean containsAtStart(Path filePath) {
+        return getFormatAtStart(filePath) != FormatName.NONE;
+
+    }
+
+    /**
+     * Checks for metadata at end of file.
+     *
+     * @param filePath Path to file
+     * @return <code>true</code> - Contains metadata<br><code>false</code> - Header not found
+     */
+    public static boolean containsAtEnd(Path filePath) {
+        return getFormatAtEnd(filePath) != FormatName.NONE;
+    }
+
+    /**
+     * Checks for metadata at file.
+     *
+     * @param filePath Path to file
+     * @return Found metadata format
+     */
+    public static FormatName getFormat(Path filePath) {
+        FormatName formatAtStart = getFormatAtStart(filePath);
+        if (formatAtStart != FormatName.NONE) {
+            return formatAtStart;
+        } else {
+            FormatName formatAtEnd = getFormatAtStart(filePath);
+            if (formatAtEnd != FormatName.NONE) {
+                return formatAtEnd;
+            }
+        }
+        return FormatName.NONE;
+    }
+
+    /**
+     * Checks for metadata at start of file.
+     *
+     * @param filePath Path to file
+     * @return Found metadata format
+     */
+    public static FormatName getFormatAtStart(Path filePath) {
+        if (!Files.exists(filePath) || Files.isDirectory(filePath)) return FormatName.NONE;
+        String fileAbsolutePath = filePath.toAbsolutePath().toString();
+
+        try (FileInputStream file = new FileInputStream(fileAbsolutePath)) {
+            byte[] header = new byte[MAX_PRE_TAG_LENGTH_BYTES];
+
+            int readBytes = file.read(header);
+            if (readBytes > 0) {
+                String tag = new String(header).toUpperCase();
+                switch (tag) {
+                    case ID3v1.META_TAG:
+                        return FormatName.ID3v1;
+                    case ID3v23.META_TAG:
+                        return FormatName.ID3v23;
+                    default:
+                        break;
+                }
+            }
+        } catch (Exception e) {
+            return FormatName.NONE;
+        }
+
+        return FormatName.NONE;
+    }
+
+    /**
+     * Checks for metadata at end of file.
+     *
+     * @param filePath Path to file
+     * @return Metadata format
+     */
+    public static FormatName getFormatAtEnd(Path filePath) {
+        if (!Files.exists(filePath) || Files.isDirectory(filePath)) return FormatName.NONE;
+        String fileAbsolutePath = filePath.toAbsolutePath().toString();
+
+        int fileSizeInBytes = 0;
+        try {
+            fileSizeInBytes = (int) Files.size(filePath);
+        } catch (IOException e) {
+            return FormatName.NONE;
+        }
+        try (RandomAccessFile file = new RandomAccessFile(fileAbsolutePath, "r")) {
+            file.skipBytes(fileSizeInBytes - ID3v23.POST_PENDED_HEADER_LENGTH_BYTES);
+            byte[] header = new byte[ID3v23.POST_PENDED_HEADER_LENGTH_BYTES];
+
+            file.readFully(header, 0, ID3v23.POST_PENDED_HEADER_LENGTH_BYTES);
+            String tag = new String(header).toUpperCase();
+            if (tag.contains(ID3v23.TAG_ID3v2_REVERSED)) {
+                return FormatName.ID3v2;
+            }
+        } catch (IOException e) {
+            return FormatName.NONE;
+        }
+
+        try (RandomAccessFile file = new RandomAccessFile(fileAbsolutePath, "r")) {
+            file.skipBytes(fileSizeInBytes - ID3v1.HEADER_LENGTH);
+            byte[] header = new byte[ID3v1.HEADER_LENGTH];
+
+            file.readFully(header, 0, header.length);
+            String tag = new String(header).toUpperCase();
+            if (tag.contains("TAG")) {
+                return FormatName.ID3v1;
+            }
+        } catch (IOException e) {
+            return FormatName.NONE;
+        }
+
+        return FormatName.NONE;
     }
 
     /**
@@ -175,6 +285,43 @@ public class Metadata {
         }
 
         return meta;
+    }
+
+    /**
+     * Reads metadata from file.
+     *
+     * @param filePath Path to file
+     * @return Metadata information. If metadata not found returns <code>null</code>.
+     */
+    public static Metadata read(String filePath) {
+        Metadata metadata = null;
+        Path path = Paths.get(filePath);
+        Metadata.FormatName format = Metadata.getFormatAtStart(path);
+        switch (format) {
+            case ID3v1:
+                metadata = Metadata.readID3v1(filePath);
+                break;
+            case ID3v2:
+            case ID3v23:
+                metadata = Metadata.readID3v23(filePath);
+                break;
+            case NONE:
+            default:
+                break;
+        }
+
+        if (metadata == null) {
+            format = Metadata.getFormatAtEnd(path);
+            switch (format) {
+                case ID3v1:
+                    metadata = Metadata.readID3v1(filePath);
+                    break;
+                default:
+                    throw new UnsupportedOperationException("Only ID3v1 post-pended format supported");
+            }
+        }
+
+        return metadata;
     }
 
     /**
@@ -353,142 +500,5 @@ public class Metadata {
         }
 
         return meta;
-    }
-
-    /**
-     * Checks for metadata at file.
-     *
-     * @param filePath Path to file
-     * @return <code>true</code> - if contains metadata<br><code>false</code> - if not found
-     */
-    public static boolean contains(String filePath) {
-        return contains(Paths.get(filePath));
-    }
-
-    /**
-     * Checks for metadata at file.
-     *
-     * @param filePath Path to file
-     * @return <code>true</code> - if contains metadata<br><code>false</code> - if not found
-     */
-    public static boolean contains(Path filePath) {
-        return containsAtStart(filePath) || containsAtEnd(filePath);
-    }
-
-    /**
-     * Checks for metadata at file.
-     *
-     * @param filePath Path to file
-     * @return Found metadata format
-     */
-    public static FormatName getFormat(Path filePath) {
-        FormatName formatAtStart = getFormatAtStart(filePath);
-        if (formatAtStart != FormatName.NONE) {
-            return formatAtStart;
-        } else {
-            FormatName formatAtEnd = getFormatAtStart(filePath);
-            if (formatAtEnd != FormatName.NONE) {
-                return formatAtEnd;
-            }
-        }
-        return FormatName.NONE;
-    }
-
-    /**
-     * Checks for metadata at start of file.
-     *
-     * @param filePath Path to file
-     * @return <code>true</code> - if contains metadata<br><code>false</code> - if not found
-     */
-    public static boolean containsAtStart(Path filePath) {
-        return getFormatAtStart(filePath) != FormatName.NONE;
-
-    }
-
-    /**
-     * Checks for metadata at start of file.
-     *
-     * @param filePath Path to file
-     * @return Found metadata format
-     */
-    public static FormatName getFormatAtStart(Path filePath) {
-        if (!Files.exists(filePath) || Files.isDirectory(filePath)) return FormatName.NONE;
-        String fileAbsolutePath = filePath.toAbsolutePath().toString();
-
-        try (FileInputStream file = new FileInputStream(fileAbsolutePath)) {
-            byte[] header = new byte[MAX_PRE_TAG_LENGTH_BYTES];
-
-            int readBytes = file.read(header);
-            if (readBytes > 0) {
-                String tag = new String(header).toUpperCase();
-                switch (tag) {
-                    case ID3v1.META_TAG:
-                        return FormatName.ID3v1;
-                    case ID3v23.META_TAG:
-                        return FormatName.ID3v23;
-                    default:
-                        break;
-                }
-            }
-        } catch (Exception e) {
-            return FormatName.NONE;
-        }
-
-        return FormatName.NONE;
-    }
-
-    /**
-     * Checks for metadata at end of file.
-     *
-     * @param filePath Path to file
-     * @return <code>true</code> - Contains metadata<br><code>false</code> - Header not found
-     */
-    public static boolean containsAtEnd(Path filePath) {
-        return getFormatAtEnd(filePath) != FormatName.NONE;
-    }
-
-    /**
-     * Checks for metadata at end of file.
-     *
-     * @param filePath Path to file
-     * @return Metadata format
-     */
-    public static FormatName getFormatAtEnd(Path filePath) {
-        if (!Files.exists(filePath) || Files.isDirectory(filePath)) return FormatName.NONE;
-        String fileAbsolutePath = filePath.toAbsolutePath().toString();
-
-        int fileSizeInBytes = 0;
-        try {
-            fileSizeInBytes = (int) Files.size(filePath);
-        } catch (IOException e) {
-            return FormatName.NONE;
-        }
-        try (RandomAccessFile file = new RandomAccessFile(fileAbsolutePath, "r")) {
-            file.skipBytes(fileSizeInBytes - ID3v23.POST_PENDED_HEADER_LENGTH_BYTES);
-            byte[] header = new byte[ID3v23.POST_PENDED_HEADER_LENGTH_BYTES];
-
-            file.readFully(header, 0, ID3v23.POST_PENDED_HEADER_LENGTH_BYTES);
-            String tag = new String(header).toUpperCase();
-            if (tag.contains(ID3v23.TAG_ID3v2_REVERSED)) {
-                return FormatName.ID3v2;
-            }
-        } catch (IOException e) {
-            return FormatName.NONE;
-        }
-
-        try (RandomAccessFile file = new RandomAccessFile(fileAbsolutePath, "r")) {
-            file.skipBytes(fileSizeInBytes - ID3v1.HEADER_LENGTH);
-            byte[] header = new byte[ID3v1.HEADER_LENGTH];
-
-            file.readFully(header, 0, header.length);
-            String tag = new String(header).toUpperCase();
-            if (tag.contains("TAG")) {
-                return FormatName.ID3v1;
-            }
-        } catch (IOException e) {
-            return FormatName.NONE;
-        }
-
-        return FormatName.NONE;
     }
 }
