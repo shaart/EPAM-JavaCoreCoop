@@ -6,13 +6,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
-/* TODO
-    Encoding UTF-8/UTF-16
-    - find byte where stores information about encoding
-    - read meta info with correct encoding
-    - parse required data to song name with extension
- */
-
 public class CacheReader {
 
     private final static String CACHE_FILE_NAME_PREFIX = "f_";
@@ -33,15 +26,20 @@ public class CacheReader {
         Path cacheFolder = Paths.get(cacheFolderPath);
         if (Files.exists(cacheFolder) && Files.isDirectory(cacheFolder)) {
             List<List<String>> songs = new ArrayList<>();
-
+            String lastFoundSongName = null;
+            String currentSongName = null;
             try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(cacheFolder)) {
                 List<String> songParts = new ArrayList<>();
                 for (Path songPart : directoryStream) {
                     if (songPart.getFileName().toString().startsWith(CACHE_FILE_NAME_PREFIX)
                             && Files.size(songPart) <= CACHE_PART_SIZE_IN_BYTES) {
                         if (Metadata.contains(songPart) && songParts.size() > 0) { // new .mp3 file
-                            songs.add(songParts); // save prev list of parts
-                            songParts = new ArrayList<>(); // and create new list of parts
+                            lastFoundSongName = searchSongName(songParts);
+                            currentSongName = searchSongName(songPart.toAbsolutePath().toString());
+                            if (lastFoundSongName == null || lastFoundSongName != null && !lastFoundSongName.equals(currentSongName)) {
+                                songs.add(songParts); // save prev list of parts
+                                songParts = new ArrayList<>(); // and create new list of parts
+                            }
                         }
                         songParts.add(songPart.toAbsolutePath().toString());
                     }
@@ -84,21 +82,25 @@ public class CacheReader {
     public static String searchSongName(String filePath) {
         String songName = null;
 
-        Metadata metadata = Metadata.read(filePath);
-        if (metadata != null) {
-            String songArtist = metadata.getArtist();
-            if (songArtist != null && !songArtist.trim().equals("")) {
-                songName = songArtist;
-            }
+        try {
+            Metadata metadata = Metadata.read(filePath);
+            if (metadata != null) {
+                String songArtist = metadata.getArtist();
+                if (songArtist != null && !songArtist.trim().equals("")) {
+                    songName = songArtist.trim();
+                }
 
-            String songTitle = metadata.getTitle();
-            if (songTitle != null && !songTitle.trim().equals("")) {
-                if (songName != null) songName += " - ";
-                songName += songTitle;
-            }
+                String songTitle = metadata.getTitle();
+                if (songTitle != null && !songTitle.trim().equals("")) {
+                    if (songName != null) songName += " - ";
+                    songName += songTitle.trim();
+                }
 
-            if (songName != null)
-                songName += ".mp3";
+                if (songName != null)
+                    songName += ".mp3";
+            }
+        } catch (UnsupportedOperationException e) {
+            // nothing to do
         }
 
         return songName;
@@ -142,7 +144,7 @@ public class CacheReader {
      * @param args Program arguments
      */
     public static void main(String[] args) {
-        String musicCachePath = "";
+        String musicCachePath;
         try {
             musicCachePath = detectCachePath();
 
