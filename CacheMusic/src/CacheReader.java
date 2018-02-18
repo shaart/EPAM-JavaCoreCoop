@@ -76,67 +76,30 @@ public class CacheReader {
     }
 
     /**
-     * Searches at <code>filePath</code> for name in MP3 metadata
+     * Searches at <code>filePath</code> for name in MP3 metadata.
      *
      * @param filePath Path to file
      * @return Name of file or <code>null</code> if not found
      */
     public static String searchSongName(String filePath) {
         String songName = null;
-        Path path = Paths.get(filePath);
-        String fileAbsolutePath = path.toAbsolutePath().toString();
 
-        Metadata.FormatName format = Metadata.getFormatAtStart(path);
-        File file = new File(filePath);
-        String songArtist = null;
-        String songTitle = null;
-        Metadata metadata = null;
-        switch (format) {
-            case ID3v1:
-                metadata = Metadata.readID3v1(filePath);
-                songArtist = metadata.getArtist();
-                songTitle = metadata.getTitle();
-                break;
-            case ID3v2:
-                metadata = Metadata.readID3v23(filePath);
-                break;
-            case NONE:
-            default:
-                songName = null;
-                break;
-        }
+        Metadata metadata = Metadata.read(filePath);
         if (metadata != null) {
-            songArtist = metadata.getArtist();
-            songTitle = metadata.getTitle();
-        }
-
-        if (songName == null) {
-            format = Metadata.getFormatAtEnd(path);
-            switch (format) {
-                case ID3v1:
-                    metadata = Metadata.readID3v1(filePath);
-                    if (metadata != null) {
-                        songArtist = metadata.getArtist();
-                        songTitle = metadata.getTitle();
-                    }
-                    break;
-                default:
-                    throw new UnsupportedOperationException("Only ID3v1 post-pended format supported");
+            String songArtist = metadata.getArtist();
+            if (songArtist != null && !songArtist.trim().equals("")) {
+                songName = songArtist;
             }
-        }
 
-        if (songArtist != null) {
-            songName = songArtist;
-        }
+            String songTitle = metadata.getTitle();
+            if (songTitle != null && !songTitle.trim().equals("")) {
+                if (songName != null) songName += " - ";
+                songName += songTitle;
+            }
 
-        if (songTitle != null) {
-            if (songArtist != null) songName += " - ";
-            songName += songTitle;
+            if (songName != null)
+                songName += ".mp3";
         }
-
-        if (songName != null)
-            songName += ".mp3";
-        System.out.println("Result song name: " + songName);
 
         return songName;
     }
