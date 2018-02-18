@@ -4,8 +4,9 @@ import java.util.List;
 
 public class FileBuilder {
 
-    //private static String cashFolderPath = "";
-    // private static Path outputFolder = Paths.get(".", "Tracks");
+    //    private static String cashFolderPath = "";
+    private final static Path DEFAULT_OUTPUT_FOLDER = Paths.get(".", "Tracks");
+    private final static String DEFAULT_SONG_NAME = "Unnamed";
 
     private static final String MP3 = ".mp3";
 
@@ -25,52 +26,60 @@ public class FileBuilder {
     }
 
     /**
-     * Collect track parts to full track; Additional parameteres;
+     * Collect track parts to full track; Additional parameters;
      *
      * @param files track parts
      * @throws IOException
      */
     public static void build(List<String> files) throws IOException {
 
-        build(files, Paths.get(".", "Tracks"), "Unnamed");
+        build(files, DEFAULT_OUTPUT_FOLDER, DEFAULT_SONG_NAME);
     }
 
 
     /**
-     * Collect track parts to full track; Additional parameteres;
+     * Collect track parts to full track; Additional parameters;
      *
      * @param files    track parts
      * @param fileName name of full track which we get finally
      * @throws IOException
      */
-
     public static void build(List<String> files, String fileName) throws IOException {
 
-        build(files, outputFolder, fileName);
+        build(files, DEFAULT_OUTPUT_FOLDER, fileName);
     }
 
+    /**
+     * Collect track parts to full track; Additional parameters;
+     *
+     * @param files        track parts
+     * @param outputFolder folder that will contain final track
+     * @throws IOException
+     */
+    public static void build(List<String> files, Path outputFolder) throws IOException {
+
+        build(files, outputFolder, "Unnamed");
+    }
 
     /**
-     * Collect track parts to full track; Additional parameteres;
+     * Collect track parts to full track; Additional parameters;
      *
      * @param files        track parts
      * @param fileName     name of full track which we get finally
      * @param outputFolder folder that will contain final track
      * @throws IOException
      */
-
     public static void build(List<String> files, Path outputFolder, String fileName) throws IOException {
 
-
-        if (Files.notExist(outputFolder))
+        if (Files.notExists(outputFolder))
             Files.createDirectories(outputFolder);
 
-        Path outSong = Paths.get(outputFolder, fileName + MP3);
+        Path outSong = Paths.get(outputFolder.toAbsolutePath().toString(), fileName + MP3);
 
         if (Files.notExists(outSong))
             Files.createFile(outSong);
         else
-            outSong = Files.createFile(Paths.get(songEnumerator(outputFolder, fileName) + MP3));
+            outSong = Files.createFile(Paths.get(songEnumerator(outputFolder.toAbsolutePath().toString(), fileName) + MP3));
 
 
         for (String str : files) {

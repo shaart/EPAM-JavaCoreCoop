@@ -86,18 +86,18 @@ public class CacheReader {
             Metadata metadata = Metadata.read(filePath);
             if (metadata != null) {
                 String songArtist = metadata.getArtist();
-                if (songArtist != null && !songArtist.trim().equals("")) {
+                if (songArtist != null && !songArtist.trim().isEmpty()) {
                     songName = songArtist.trim();
                 }
 
                 String songTitle = metadata.getTitle();
                 if (songTitle != null && !songTitle.trim().equals("")) {
-                    if (songName != null) songName += " - ";
-                    songName += songTitle.trim();
+                    if (songName != null) {
+                        songName += " - " + songTitle.trim();
+                    } else {
+                        songName = songTitle.trim();
+                    }
                 }
-
-                if (songName != null)
-                    songName += ".mp3";
             }
         } catch (UnsupportedOperationException e) {
             // nothing to do
@@ -144,20 +144,54 @@ public class CacheReader {
      * @param args Program arguments
      */
     public static void main(String[] args) {
-        String musicCachePath;
+        Path outputFolder = null;
+        if (args.length >= 1) {
+            String arg0 = args[0].toLowerCase();
+            if (arg0.equals("help") || arg0.equals("?") || arg0.equals("/?")) {
+                System.out.println("Program usage: CacheReader [output_folder] [cache_folder]\nParameters:\n" +
+                        "output_folder\tDestination folder for found songs\n" +
+                        "cache_folder\tPath to folder with cache files");
+                return;
+            }
+            outputFolder = Paths.get(args[0]);
+        }
+        String musicCachePath = null;
+        if (args.length >= 2) {
+            musicCachePath = args[1];
+            if (!Files.isDirectory(Paths.get(musicCachePath))) {
+                System.out.println("Error: Received [cache_folder] is not folder. Please try again.");
+                return;
+            }
+        }
         try {
-            musicCachePath = detectCachePath();
+            if (musicCachePath == null) {
+                musicCachePath = detectCachePath();
+            }
 
             List<List<String>> songs = scan(musicCachePath);
             long filesAnalysed = 0;
             for (List<String> songParts : songs) {
                 String fileName = searchSongName(songParts);
-                if (fileName == null) {
-                    FileBuilder.build(songParts);
-                } else {
-                    FileBuilder.build(songParts, fileName);
+                try {
+                    if (fileName == null) {
+                        if (outputFolder == null) {
+                            FileBuilder.build(songParts);
+                        } else {
+                            FileBuilder.build(songParts, outputFolder);
+                        }
+                    } else {
+                        if (outputFolder == null) {
+                            FileBuilder.build(songParts, fileName);
+                        } else {
+                            FileBuilder.build(songParts, outputFolder, fileName);
+                        }
+                    }
+                    filesAnalysed += songParts.size();
+                } catch (IOException e) {
+                    System.err.format("An error occurred while creating %s song from parts!\nError: %s\n",
+                            fileName == null ? "unknown" : fileName,
+                            e.getMessage());
                 }
-                filesAnalysed += songParts.size();
             }
             System.out.format("Cache was successfully read!\n== Statistics:\n  Analysed part files: %d.\n  Found songs: %d.",
                     filesAnalysed, songs.size());
