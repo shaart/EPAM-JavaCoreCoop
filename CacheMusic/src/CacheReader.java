@@ -146,9 +146,9 @@ public class CacheReader {
      */
     public static void main(String[] args) {
         final String PROGRAM_USAGE = "Program usage: CacheReader [-o <output_folder>] [-c <cache_folder>]\nParameters:\n" +
-                "-o <output_folder>\tDestination folder for found songs\n\t\t\t\t\tDefault path: " +
+                "   -o <output_folder>\tDestination folder for found songs. Default path: " +
                 FileBuilder.DEFAULT_OUTPUT_FOLDER + "\n" +
-                "-c <cache_folder>\tPath to folder with cache files\n";
+                "   -c <cache_folder>\tPath to folder with cache files\n";
 
         String arg0 = args.length > 0 ? args[0].toLowerCase() : "";
         if (args.length > 0 && (arg0.equals("help") || arg0.equals("?") || arg0.equals("/?"))) {
@@ -200,7 +200,8 @@ public class CacheReader {
                             break;
                         default:
                             System.err.println("Found unknown parameter: " + args[i]);
-                            break;
+                            System.out.println(PROGRAM_USAGE);
+                            return;
                     }
                 }
             }
