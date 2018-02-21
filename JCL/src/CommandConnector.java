@@ -11,6 +11,7 @@ import java.util.Map;
 class CommandConnector {
 
     private static String functionFolderPath = ".//src//commands//";
+    private static String classFolder = "commands";
 
     static Map<String, Commandable> getCommands() {
 
@@ -26,12 +27,9 @@ class CommandConnector {
 
 
             for (Path classPath : directoryStream) {
-                //System.out.println(classPath);
                 String className = classPath.getFileName().toString();
-                // System.out.println(className);
                 className = className.substring(0, className.lastIndexOf("."));
-                className = "commands." + className;
-                //System.out.println(className);
+                className = classFolder +"." + className;
                 Class running = classLoader.loadClass(className);
 
                 Class[] interfaces = running.getInterfaces();
@@ -41,15 +39,8 @@ class CommandConnector {
                         Commandable command = (Commandable) obj;
                         String commandName = command.getCommandName();
                         commands.put(commandName, command);
-
-
-                        System.out.println("commandName: " + commandName);
-                        System.out.println("command: " + commands.get(commandName));
-                        System.out.println("size: " + commands.size());
-
-
+                        break;
                     }
-
 
                 }
             }
