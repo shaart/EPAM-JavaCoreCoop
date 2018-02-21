@@ -5,7 +5,7 @@ import interfaces.Commandable;
 
 public class Zip implements Commandable {
 
-    private final String commandName = "z";
+    private final String commandName = "zip";
 
 
     @Override
@@ -24,8 +24,8 @@ public class Zip implements Commandable {
     }
 
     @Override
-    public void run(String[] args) {
-        System.out.println(args);
+    public void run(String args[]) {
+        System.out.println("Zip method is running now");
     }
 
     public boolean demoMethod(String [] args){

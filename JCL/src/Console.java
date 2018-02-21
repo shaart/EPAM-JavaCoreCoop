@@ -41,36 +41,31 @@ public class Console {
                 //System.out.println(className);
                 Class running = classLoader.loadClass(className);
 
-                //Class[] interfaces = running.getInterfaces();
-                //System.out.println(running.getName());
-                //for (Class cInterface : interfaces) {
-                Object obj = running.newInstance();
-                if (obj instanceof Commandable) {
-                    Commandable command = (Commandable) obj;
-                    String commandName = command.getCommandName();
-                    commands.put(commandName, (Commandable) running.newInstance());
+                Class[] interfaces = running.getInterfaces();
+                for (Class cInterface : interfaces) {
+                    if (cInterface == Commandable.class) {
+                        Object obj = running.newInstance();
+                        Commandable command = (Commandable) obj;
+                        String commandName = command.getCommandName();
+                        commands.put(commandName, command);
 
 
-                    System.out.println("commandName: " + commandName);
-                    System.out.println("command: " +commands.get(commandName));
-                    System.out.println("size: " +commands.size());
+                        System.out.println("commandName: " + commandName);
+                        System.out.println("command: " + commands.get(commandName));
+                        System.out.println("size: " + commands.size());
 
 
+                    }
 
 
                 }
-
-
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-        } catch (InstantiationException e) {
+        } catch (IOException | ClassNotFoundException | IllegalAccessException | InstantiationException e) {
             e.printStackTrace();
         }
+
+
+        commands.get("zip").run(new String[]{}); // command test
     }
 }
 
