@@ -1,0 +1,53 @@
+== USAGE
+java jcl
+or
+java console
+> user_input
+
+== USAGE EXAMPLE AT CMD.EXE/BASH
+java jcl
+> zip -a file.txt f.zip
+
+== COMMANDS
+(static?) HashMap<String, Commandable> commands
+String: CommandName 
+Commandable: (class)Command implements Commandable
+
+== AT main()
+(or static?) Console = new Console();
+while(!exit) {
+	String readCommand = readLine();
+	readCommand split to String[] tokens
+	Get Commandable from HashMap<> commands by tokens[0]
+	make tokens without [0] (without command name)
+	Commandable.run(tokens);
+}
+
+== ON STARTUP *HARD
+loadCommands() FROM src/commands/*.java
+-> adding to HashMap<> commands
+
+== COMMANDS SOURCE CODE LOCATION
+/commands/
+
+== INTERFACE
+Commandable {
+	void run(String[] args);
+	String getUsage();
+	String getCommandName();
+	String getDescription();
+}
+
+== COMMANDS EXAMPLE
+class ZipCommand implements Commandable {
+final String commandName = "zip";
+	/*
+	Parameter -a <source> <output>	Make archive "output" from "source" (file/folder)
+	Parameter -d <source> <output>	Decompress archive "source" to "output" folder
+	*/
+}
+
+== HELP COMMAND
+for(Entry<> es : commands) {
+	println(es.key() + "\t" + es.value()); // where key = commandName, value = commandDescription
+}
