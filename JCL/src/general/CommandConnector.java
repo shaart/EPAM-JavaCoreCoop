@@ -1,3 +1,5 @@
+package general;
+
 import interfaces.Commandable;
 
 import java.io.IOException;
@@ -8,28 +10,20 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
-class CommandConnector {
+public class CommandConnector {
+    private static String functionFolderPath = "commands";
+    private static String packageFolder = "commands";
 
-    private static String functionFolderPath = ".//src//commands//";
-    private static String classFolder = "commands";
-
-    static Map<String, Commandable> getCommands() {
-
-
+    public static Map<String, Commandable> getCommands() {
         Map<String, Commandable> commands = new HashMap<>();
-
         Path functionFolder = Paths.get(functionFolderPath);
-
         ClassLoader classLoader = ClassLoader.getSystemClassLoader();
 
-
         try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(functionFolder)) {
-
-
             for (Path classPath : directoryStream) {
                 String className = classPath.getFileName().toString();
                 className = className.substring(0, className.lastIndexOf("."));
-                className = classFolder +"." + className;
+                className = packageFolder + "." + className;
                 Class running = classLoader.loadClass(className);
 
                 Class[] interfaces = running.getInterfaces();
@@ -41,7 +35,6 @@ class CommandConnector {
                         commands.put(commandName, command);
                         break;
                     }
-
                 }
             }
         } catch (IOException | ClassNotFoundException | IllegalAccessException | InstantiationException e) {
