@@ -32,7 +32,7 @@ public class Rename implements Commandable {
     @Override
     public void run(String[] args) {
         if (args == null || args.length < 2) {
-            if (args != null && (args.length < 1 || args.length == 1 && args[0] != null &&
+            if (args != null && (args.length == 0 || args.length == 1 && args[0] != null &&
                     (args[0].equalsIgnoreCase("/?") || args[0].equalsIgnoreCase("help")))) {
                 System.out.println(commandUsage);
             } else

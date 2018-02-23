@@ -110,7 +110,7 @@ public class Console {
                 commandArgs = matchList.toArray(commandArgs);
 
                 if (currentCommand.equalsIgnoreCase("exit") || currentCommand.equalsIgnoreCase("close")) {
-                    working = false;
+                    working = false; // for clarity
                     break;
                 }
 
