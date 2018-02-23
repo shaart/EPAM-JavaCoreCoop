@@ -115,7 +115,12 @@ public class Console {
                 }
 
                 if (commands.containsKey(currentCommand)) {
-                    commands.get(currentCommand).run(commandArgs);
+                    try {
+                        commands.get(currentCommand).run(commandArgs);
+                    } catch (Exception | Error e) {
+                        System.out.println("Command failed with error: " + e.getMessage());
+                        e.printStackTrace();
+                    }
                     System.out.println();
                 } else {
                     System.out.println("Unrecognized command: " + currentCommand);
