@@ -6,7 +6,6 @@ import interfaces.Commandable;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 
 public class Rename implements Commandable {
     private static final String commandName = "rename";
@@ -40,8 +39,11 @@ public class Rename implements Commandable {
                 System.out.println("Incorrect arguments. Command usage:\n" + commandUsage);
         } else {
             Path source = Console.getCurrentPath().resolve(Paths.get(args[0]));
-            if (!Files.exists(source)) {
-                System.out.println("File or directory with name '" + args[0] + "' not found!");
+            if (Files.notExists(source)) {
+                System.out.println("File or directory with name '" + args[0] + "' not exists!");
+                return;
+            } else if (!Files.exists(source)) {
+                System.out.println("No access to file or directory with name '" + args[0] + "'!");
                 return;
             }
 
