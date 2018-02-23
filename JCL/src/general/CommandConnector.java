@@ -22,7 +22,9 @@ public class CommandConnector {
         try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(functionFolder)) {
             for (Path classPath : directoryStream) {
                 String className = classPath.getFileName().toString();
-                className = className.substring(0, className.lastIndexOf("."));
+                if (className.contains(".")) {
+                    className = className.substring(0, className.lastIndexOf("."));
+                }
                 className = packageFolder + "." + className;
                 Class running = classLoader.loadClass(className);
 
@@ -31,7 +33,19 @@ public class CommandConnector {
                     if (cInterface == Commandable.class) {
                         Object obj = running.newInstance();
                         Commandable command = (Commandable) obj;
+
                         String commandName = command.getCommandName();
+                        if (commands.containsKey(commandName)) {
+                            commandName = running.getClass().getSimpleName();
+                            if (commands.containsKey(commandName)) {
+                                commandName = running.getClass().getName();
+                                if (commands.containsKey(commandName)) {
+                                    // skip this command
+                                    break;
+                                }
+                            }
+                        }
+
                         commands.put(commandName, command);
                         break;
                     }
