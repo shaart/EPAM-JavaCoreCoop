@@ -68,6 +68,8 @@ public class Console {
         if (commands == null || commands.isEmpty()) {
             System.err.println("Something gone wrong: commands were not loaded!");
             return;
+        } else {
+            System.out.println("\nType 'help' to display list of commands.\n");
         }
         commands.put("help", new HelpCommand());
 
