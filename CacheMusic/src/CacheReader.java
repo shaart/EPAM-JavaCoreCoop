@@ -21,13 +21,16 @@ public class CacheReader {
      * @param cacheFolderPath Path to cache folder
      * @return List of songs that must be assembled. Each song presented as list of part files.<br>
      * If received <code>cacheFolderPath</code> not exists or is not a directory - returns <code>null</code>.
+     * @throws IllegalArgumentException Cache folder not exists or is not directory
      */
-    public static List<List<String>> scan(String cacheFolderPath) {
+    public static List<List<String>> scan(String cacheFolderPath) throws IllegalArgumentException {
         Path cacheFolder = Paths.get(cacheFolderPath);
-        if (Files.exists(cacheFolder) && Files.isDirectory(cacheFolder)) {
+        if (!Files.exists(cacheFolder) || !Files.isDirectory(cacheFolder)) {
+            throw new IllegalArgumentException("Received path cache folder not exist or is not folder");
+        } else {
             List<List<String>> songs = new ArrayList<>();
-            String lastFoundSongName = null;
-            String currentSongName = null;
+            String lastFoundSongName;
+            String currentSongName;
             try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(cacheFolder)) {
                 List<String> songParts = new ArrayList<>();
                 for (Path songPart : directoryStream) {
@@ -52,8 +55,6 @@ public class CacheReader {
             }
 
             return songs;
-        } else {
-            return null;
         }
     }
 
@@ -144,32 +145,82 @@ public class CacheReader {
      * @param args Program arguments
      */
     public static void main(String[] args) {
-        Path outputFolder = null;
-        if (args.length >= 1) {
-            String arg0 = args[0].toLowerCase();
-            if (arg0.equals("help") || arg0.equals("?") || arg0.equals("/?")) {
-                System.out.println("Program usage: CacheReader [output_folder] [cache_folder]\nParameters:\n" +
-                        "output_folder\tDestination folder for found songs\n" +
-                        "cache_folder\tPath to folder with cache files");
-                return;
-            }
-            outputFolder = Paths.get(args[0]);
-        }
-        String musicCachePath = null;
-        if (args.length >= 2) {
-            musicCachePath = args[1];
-            if (!Files.isDirectory(Paths.get(musicCachePath))) {
-                System.out.println("Error: Received [cache_folder] is not folder. Please try again.");
-                return;
-            }
-        }
-        try {
-            if (musicCachePath == null) {
-                musicCachePath = detectCachePath();
-            }
+        final String PROGRAM_USAGE = "Program usage: CacheReader [-o <output_folder>] [-c <cache_folder>]\nParameters:\n" +
+                "   -o <output_folder>\tDestination folder for found songs. Default path: " +
+                FileBuilder.DEFAULT_OUTPUT_FOLDER + "\n" +
+                "   -c <cache_folder>\tPath to folder with cache files\n";
 
-            List<List<String>> songs = scan(musicCachePath);
+        String arg0 = args.length > 0 ? args[0].toLowerCase() : "";
+        if (args.length > 0 && (arg0.equals("help") || arg0.equals("?") || arg0.equals("/?"))) {
+            System.out.println(PROGRAM_USAGE);
+            return;
+        }
+
+        Path outputFolder = null;
+        String musicCacheFolder = null;
+
+        String lastArg = "";
+        final String ARG_OUTPUT = "-o";
+        final String ARG_CACHE = "-c";
+        List<String> argPrefixes = new ArrayList<String>() {
+            {
+                add(ARG_OUTPUT);
+                add(ARG_CACHE);
+            }
+        };
+        try {
+            for (int i = 0; i < args.length; i++) {
+                String arg = args[i].toLowerCase();
+                if (lastArg.isEmpty() && argPrefixes.contains(arg)) {
+                    lastArg = arg;
+                } else {
+                    if (argPrefixes.contains(args[i])) {
+                        System.err.format("Error: Waited for value of '%s' parameter, but found parameter: %s\n",
+                                lastArg, args[i]);
+                        return;
+                    }
+                    switch (lastArg) {
+                        case ARG_OUTPUT:
+                            outputFolder = Paths.get(args[i]);
+                            lastArg = "";
+                            break;
+                        case ARG_CACHE:
+                            musicCacheFolder = args[i];
+                            Path cachePath = Paths.get(musicCacheFolder);
+                            if (!Files.exists(cachePath)) {
+                                System.err.println(
+                                        "Error: Received <cache_folder> not exists or program don't have access to folder!");
+                                return;
+                            }
+                            if (!Files.isDirectory(cachePath)) {
+                                System.err.println("Error: Received <cache_folder> is not folder!");
+                                return;
+                            }
+                            lastArg = "";
+                            break;
+                        default:
+                            System.err.println("Found unknown parameter: " + args[i]);
+                            System.out.println(PROGRAM_USAGE);
+                            return;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Incorrect parameters");
+            return;
+        }
+        System.out.format("Starting program with parameters:\n\tOutput folder: %s\n",
+                outputFolder == null ? "[default] " + FileBuilder.DEFAULT_OUTPUT_FOLDER : outputFolder);
+        try {
+            if (musicCacheFolder == null) {
+                musicCacheFolder = detectCachePath();
+                System.out.format("\tCache folder: [default] %s\n", musicCacheFolder);
+            } else {
+                System.out.format("\tCache folder: %s\n", musicCacheFolder);
+            }
+            List<List<String>> songs = scan(musicCacheFolder);
             long filesAnalysed = 0;
+            int statsSongsProcessed = 0;
             for (List<String> songParts : songs) {
                 String fileName = searchSongName(songParts);
                 try {
@@ -192,12 +243,17 @@ public class CacheReader {
                             fileName == null ? "unknown" : fileName,
                             e.getMessage());
                 }
+                statsSongsProcessed++;
+                System.out.format("\rProgress: %d%% (%d/%d)",
+                        statsSongsProcessed * 100 / songs.size(),
+                        statsSongsProcessed,
+                        songs.size());
             }
-            System.out.format("Cache was successfully read!\n== Statistics:\n  Analysed part files: %d.\n  Found songs: %d.",
+            System.out.format(
+                    "\nCache was successfully read!\n== Statistics:\n  Analysed part files: %d.\n  Found songs: %d.",
                     filesAnalysed, songs.size());
-
         } catch (UnsupportedOperationException e) {
-            System.out.println("Error: " + e.getMessage() + " at");
+            System.err.println("Error: " + e.getMessage() + " at");
             e.printStackTrace();
             return;
         }

@@ -5,7 +5,7 @@ import java.util.List;
 public class FileBuilder {
 
     //    private static String cashFolderPath = "";
-    private final static Path DEFAULT_OUTPUT_FOLDER = Paths.get(".", "Tracks");
+    public final static Path DEFAULT_OUTPUT_FOLDER = Paths.get(".", "Tracks");
     private final static String DEFAULT_SONG_NAME = "Unnamed";
 
     private static final String MP3 = ".mp3";
