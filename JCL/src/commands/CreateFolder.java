@@ -49,10 +49,10 @@ public class CreateFolder implements Commandable {
             }
 
             try {
-                Files.createDirectory(directory);
+                Files.createDirectories(directory);
                 System.out.println("Directory \"" + directory + "\" created.");
             } catch (IOException e) {
-                System.out.println("Can't create directory at path \"" + directory + "\"\nError: " + e.getMessage());
+                System.out.println("Can't create directory at path \"" + directory + "\".\nError: " + e.getMessage());
             }
         }
     }
