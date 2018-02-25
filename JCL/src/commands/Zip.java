@@ -16,10 +16,16 @@ public class Zip implements Commandable {
 
     private final String commandName = "zip";
 
+    private static final String commandUsage = "zip <argument> <source> \n" +
+            "  <argument>\tchoose wisely: \n" +
+            "\t\ta - archive, turn current file to zip archive \n" +
+            "\t\tu - unarchive, unzip source file \n"+
+            "  <source>\tFile or directory to zip / unzip\n";
+
 
     @Override
     public String getUsage() {
-        return null;
+        return commandUsage;
     }
 
     @Override
@@ -34,12 +40,29 @@ public class Zip implements Commandable {
 
     @Override
     public void run(String args[]) {
-        String compressionIndex = args[0];
-        if (compressionIndex.trim().equals("a") ){
-            zip (args[1]);
+
+        if (args == null || args.length == 0 || args[1]==null){
+            System.out.println(getUsage());
+            return;
         }
-        if (compressionIndex.trim().equals("u") ){
-            unzip (args[1]);
+
+        String compressionIndex = args[0];
+
+        if (compressionIndex.trim().equals("a")) {
+            if (new File(args[1]).exists())
+                zip(args[1]);
+            else
+                System.out.println("File " + args[1] + " doesn't exist");
+        }
+        else if (compressionIndex.trim().equals("u")){
+            if (new File(args[1].concat(".zip")).exists() )
+                unzip (args[1]);
+            else
+                System.out.println("File "+ args[1] +" doesn't exist");
+        }
+        else {
+            System.out.println("Wrong argument " + compressionIndex);
+            System.out.println(getUsage());
         }
         // Path folderToZip = Paths.get(args[0]);
     }
