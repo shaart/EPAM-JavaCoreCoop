@@ -60,7 +60,7 @@ public class Zip implements Commandable {
                 System.out.println("File " + args[1] + " doesn't exist");
         }
         else if (compressionIndex.trim().equals("u")){
-            if (check.exists() )
+            if (check.getAbsoluteFile().exists() )
                 if (check.isAbsolute())
                     unzip(args[1]);
                 else
