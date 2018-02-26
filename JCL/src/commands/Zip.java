@@ -47,23 +47,17 @@ public class Zip implements Commandable {
         }
 
         String compressionIndex = args[0];
-        File check = new File(args[1]);
+        File check = new File(args[1]).getAbsoluteFile();
 
         if (compressionIndex.trim().equals("a")) {
-            if (check.getAbsoluteFile().exists()) {
-                if (check.isAbsolute())
-                    zip(args[1]);
-                else
+            if (check.exists()) {
                     zip(check.getAbsolutePath().toString());
             }
             else
                 System.out.println("File " + args[1] + " doesn't exist");
         }
         else if (compressionIndex.trim().equals("u")){
-            if (check.getAbsoluteFile().exists() )
-                if (check.isAbsolute())
-                    unzip(args[1]);
-                else
+            if (check.exists() )
                     unzip(check.getAbsolutePath().toString());
             else
                 System.out.println("File "+ args[1] +" doesn't exist");
@@ -102,7 +96,7 @@ public class Zip implements Commandable {
         if (fileToZip.isDirectory()) {
             File[] children = fileToZip.listFiles();
             for (File childFile : children != null ? children : new File[0]) {
-                zipFile(childFile, fileName + "\\" + childFile.getName(), zipOut);
+                zipFile(childFile, fileName + File.separator + childFile.getName(), zipOut);
                 System.out.println("file zipped : "+ childFile.getAbsoluteFile());
             }
             return;
