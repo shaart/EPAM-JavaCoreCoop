@@ -14,9 +14,9 @@ import java.util.zip.ZipOutputStream;
 
 public class Zip implements Commandable {
 
-    private final String commandName = "zip";
+    private final String commandName = "zipIO";
 
-    private static final String commandUsage = "zip <argument> <source> \n" +
+    private static final String commandUsage = "zipIO <argument> <source> \n" +
             "  <argument>\tchoose wisely: \n" +
             "\t\ta - archive, turn current file to zip archive \n" +
             "\t\tu - unarchive, unzip source file \n"+
@@ -113,17 +113,22 @@ public class Zip implements Commandable {
 
     private void unzip(String fileZip){
         fileZip += ".zip";
-        String outputZip = fileZip.substring(0, fileZip.lastIndexOf("//"));
+        System.out.println(fileZip);
+        //String outputZip = fileZip.substring(0, fileZip.lastIndexOf(""));
 
         //System.out.println(outputZip);
         //System.out.println(fileZip);
 
+        File outputZip = new File(new File(fileZip).getParentFile().getName());
+        //outputZip = outputZip.getParentFile();
+
         byte[] buffer = new byte[1024];
         try (ZipInputStream zis = new ZipInputStream(new FileInputStream(fileZip))) {
+
             ZipEntry zipEntry = zis.getNextEntry();
             while (zipEntry != null) {
                 String fileName = zipEntry.getName();
-                File newFile = new File(outputZip + File.separator + fileName);
+                File newFile = new File(String.valueOf(outputZip + File.separator + fileName));
 
                 System.out.println("file unzip : "+ newFile.getAbsoluteFile());
 

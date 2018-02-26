@@ -1,6 +1,8 @@
 import general.CommandConnector;
 import interfaces.Commandable;
 import commands.Zip;
+
+import java.nio.file.Paths;
 import java.util.Map;
 
 public class Console {
@@ -16,7 +18,8 @@ public class Console {
 
         System.out.println("size: " + commands.size());
 
-        commands.get("zip").run(new String[]{"u", "D://Music//Notepad++"}); // zip command test
+        commands.get("zipIO").run(new String[]{"u", Paths.get("D:","Music","Notepad++").toString()}); // zip command test
+        //commands.get("zipIO").run(new String[]{"u", "D:\\Music\\Notepad++"}); // zip command test
         //commands.get("zip").run(new String[]{String.valueOf(0), "D://Music//default.mp3"}); // zip command test
         //Zip.unzip("D://Music//b.zip");
 
