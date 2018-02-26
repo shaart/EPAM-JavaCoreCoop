@@ -119,7 +119,7 @@ public class Zip implements Commandable {
         //System.out.println(outputZip);
         //System.out.println(fileZip);
 
-        File outputZip = new File(new File(fileZip).getParentFile().getName());
+        String outputZip = (new File(new File(fileZip).getParentFile().getAbsolutePath())).toString();
         //outputZip = outputZip.getParentFile();
 
         byte[] buffer = new byte[1024];
@@ -127,8 +127,11 @@ public class Zip implements Commandable {
 
             ZipEntry zipEntry = zis.getNextEntry();
             while (zipEntry != null) {
+
                 String fileName = zipEntry.getName();
-                File newFile = new File(String.valueOf(outputZip + File.separator + fileName));
+                File newFile = new File(outputZip + File.separator + fileName);
+
+                System.out.println(outputZip);
 
                 System.out.println("file unzip : "+ newFile.getAbsoluteFile());
 
