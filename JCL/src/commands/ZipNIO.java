@@ -62,6 +62,12 @@ public class ZipNIO implements Commandable {
             System.out.println("Wrong argument " + compressionIndex);
             System.out.println(getUsage());
         }
+    }
 
+    private void zip (String fileName){
+
+
+
+        return;
     }
 }

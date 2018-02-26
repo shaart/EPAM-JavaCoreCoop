@@ -136,13 +136,19 @@ public class Zip implements Commandable {
                 //create all non exists folders
                 new File(newFile.getParent()).mkdirs();
 
-
-                FileOutputStream fos = new FileOutputStream(newFile);
-                int len;
-                while ((len = zis.read(buffer)) > 0) {
-                    fos.write(buffer, 0, len);
+                if (zipEntry.isDirectory()){
+                    newFile.mkdir();
                 }
-                fos.close();
+                else {
+                    newFile.createNewFile();
+
+                    FileOutputStream fos = new FileOutputStream(newFile);
+                    int len;
+                    while ((len = zis.read(buffer)) > 0) {
+                        fos.write(buffer, 0, len);
+                    }
+                    fos.close();
+                }
                 zipEntry = zis.getNextEntry();
             }
         } catch (IOException e){
