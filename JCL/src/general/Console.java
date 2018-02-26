@@ -2,6 +2,7 @@ package general;
 
 import interfaces.Commandable;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -18,7 +19,10 @@ public class Console {
     private static Path currentPath = Paths.get("").toAbsolutePath();
 
     public static void setCurrentPath(Path newPath) {
-        currentPath = newPath;
+        Path solvedPath = currentPath.resolve(newPath);
+        if (Files.exists(solvedPath) && Files.isDirectory(solvedPath)) {
+            currentPath = solvedPath.toAbsolutePath().normalize();
+        }
     }
 
     public static Path getCurrentPath() {
