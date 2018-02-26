@@ -7,13 +7,13 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 
-public class RemoveFolder implements Commandable {
+public class RemoveDir implements Commandable {
     private static final String commandName = "rmdir";
     private static final String commandUsage = "rmdir [-a] <path>\n" +
-            "  [-a]\tRemove directory with content. Without this\n" +
-            "      \tparameter command removes only empty directory.\n" +
-            "  <path>\tPath to directory.\n";
-    private static final String commandDescription = "Remove directory by path.";
+            "  [-a]\tRemove file or directory with content. Without this parameter \n" +
+            "      \tcommand removes only empty directory or single file.\n" +
+            "  <path>\tPath to file or directory.\n";
+    private static final String commandDescription = "Remove file or directory by path.";
 
     @Override
     public String getUsage() {
