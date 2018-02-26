@@ -14,7 +14,10 @@ import java.util.zip.ZipOutputStream;
 
 public class Zip implements Commandable {
 
-    private final String commandName = "zipIO";
+    /**
+     * Command name in JCL console.
+     */
+    private final String commandName = "zip";
 
     private static final String commandUsage = "zipIO <argument> <source> \n" +
             "  <argument>\tchoose wisely: \n" +
@@ -38,6 +41,15 @@ public class Zip implements Commandable {
         return null;
     }
 
+
+    /**
+     *
+     * @param args
+     * args[0] - String compressionIndex, can be a - archive or u - unarchive
+     * args[1] - String contains path to file or folder should be zipped
+     * or unzipped.
+     * run uses zip or unzip.
+     */
     @Override
     public void run(String args[]) {
 
@@ -66,14 +78,16 @@ public class Zip implements Commandable {
             System.out.println("Wrong argument " + compressionIndex);
             System.out.println(getUsage());
         }
-        // Path folderToZip = Paths.get(args[0]);
     }
 
+    /**
+     * Turn chosen file to zip archive in file parent folder.
+     *
+     * @param fileName - file or folder to zip.
+     */
     private void zip (String fileName){
-        //String fileName = args[1];
 
         File toZip = new File(fileName);
-        //FileOutputStream fos = null;
         try (FileOutputStream fos = new FileOutputStream(fileName +".zip")){
 
             try(ZipOutputStream zipOut = new ZipOutputStream(fos)) {
@@ -89,6 +103,14 @@ public class Zip implements Commandable {
         System.out.println("file " + fileName + ".zip has been successfully created");
     }
 
+    /**
+     * Zip helper method.
+     * Recursively archives folder with files it contains.
+     * @param fileToZip - absolute way to file
+     * @param fileName - name of file
+     * @param zipOut - output folder
+     * @throws IOException
+     */
     private void zipFile(File fileToZip, String fileName, ZipOutputStream zipOut) throws IOException {
         if (fileToZip.isHidden()) {
             return;
@@ -112,17 +134,14 @@ public class Zip implements Commandable {
         fis.close();
     }
 
-
+    /**
+     * Unzip archive file if file parent folder.
+     *
+     * @param fileZip - zip file to unarchive
+     */
     private void unzip(String fileZip){
-        //fileZip += ".zip";
-       // System.out.println(fileZip);
-        //String outputZip = fileZip.substring(0, fileZip.lastIndexOf(""));
-
-        //System.out.println(outputZip);
-        //System.out.println(fileZip);
 
         String outputZip = (new File(new File(fileZip).getParentFile().getAbsolutePath())).toString();
-        //outputZip = outputZip.getParentFile();
 
         byte[] buffer = new byte[1024];
         try (ZipInputStream zis = new ZipInputStream(new FileInputStream(fileZip))) {
