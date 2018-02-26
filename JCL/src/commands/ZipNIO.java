@@ -7,7 +7,11 @@ import java.nio.file.Paths;
 
 public class ZipNIO implements Commandable {
 
-    private final String commandName = "zip";
+    /**
+     *  Command in progress..
+     */
+
+    private final String commandName = "zipNIO";
 
     private static final String commandUsage = "zip <argument> <source> \n" +
             "  <argument>\tchoose wisely: \n" +
