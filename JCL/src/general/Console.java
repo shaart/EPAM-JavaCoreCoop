@@ -73,7 +73,7 @@ public class Console {
             System.err.println("Something gone wrong: commands were not loaded!");
             return;
         } else {
-            System.out.println("\nType 'help' to display list of commands.\n");
+            System.out.println("\nType 'help' to display list of commands.\nType 'close' or 'exit' to close program.\n");
         }
         commands.put("help", new HelpCommand());
 
