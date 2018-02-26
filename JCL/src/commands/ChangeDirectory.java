@@ -2,7 +2,7 @@ package commands;
 
 import interfaces.Commandable;
 
-public class DirectoryChanger implements  Commandable{
+public class ChangeDirectory implements Commandable {
     @Override
     public String getUsage() {
         return null;
