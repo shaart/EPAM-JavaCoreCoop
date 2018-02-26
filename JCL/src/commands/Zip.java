@@ -55,7 +55,7 @@ public class Zip implements Commandable {
                 System.out.println("File " + args[1] + " doesn't exist");
         }
         else if (compressionIndex.trim().equals("u")){
-            if (new File(args[1].concat(".zip")).exists() )
+            if (new File(args[1]).exists() )
                 unzip (args[1]);
             else
                 System.out.println("File "+ args[1] +" doesn't exist");
@@ -112,8 +112,8 @@ public class Zip implements Commandable {
 
 
     private void unzip(String fileZip){
-        fileZip += ".zip";
-        System.out.println(fileZip);
+        //fileZip += ".zip";
+       // System.out.println(fileZip);
         //String outputZip = fileZip.substring(0, fileZip.lastIndexOf(""));
 
         //System.out.println(outputZip);
@@ -130,8 +130,6 @@ public class Zip implements Commandable {
 
                 String fileName = zipEntry.getName();
                 File newFile = new File(outputZip + File.separator + fileName);
-
-                System.out.println(outputZip);
 
                 System.out.println("file unzip : "+ newFile.getAbsoluteFile());
 

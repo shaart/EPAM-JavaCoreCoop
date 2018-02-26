@@ -18,7 +18,8 @@ public class Console {
 
         System.out.println("size: " + commands.size());
 
-        commands.get("zipIO").run(new String[]{"u", Paths.get("D:","Music","Notepad++").toString()}); // zip command test
+        commands.get("zipIO").run(new String[]{"u", Paths.get("D:","Music","Notepad++.zip").toString()}); // zip command test
+        System.out.println(Paths.get("D:","Music","Notepad++").toString());
         //commands.get("zipIO").run(new String[]{"u", "D:\\Music\\Notepad++"}); // zip command test
         //commands.get("zip").run(new String[]{String.valueOf(0), "D://Music//default.mp3"}); // zip command test
         //Zip.unzip("D://Music//b.zip");
