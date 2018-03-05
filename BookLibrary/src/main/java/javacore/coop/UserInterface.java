@@ -32,7 +32,8 @@ public class UserInterface {
             password = new char[0];
             password = scanner.nextLine().toCharArray();
 
-            System.out.println("Enter url to database. Leave this blank to use default connection.");
+            System.out.print("Enter url to database. Leave this blank to use default connection (" +
+                    Database.DEFAULT_DB_URL + ").\nConnection: ");
             databaseURL = scanner.nextLine();
             if (databaseURL.length() == 0) {
                 databaseURL = Database.DEFAULT_DB_URL;
