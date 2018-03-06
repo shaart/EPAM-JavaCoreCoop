@@ -1,6 +1,10 @@
 package javacore.coop;
 
 import javacore.coop.model.Book;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.List;
 
 /**
@@ -11,21 +15,41 @@ public class Database {
         - add necessary methods
         - realize all methods
      */
-    public static final String JDBC_DRIVER = "org.h2.Driver";
-    public static final String DEFAULT_DB_URL = "jdbc:h2:~db/library";
-    private final String DB_URL;
 
+    public static final String JDBC_DRIVER = "org.h2.Driver";
+
+    private static final String DB_PREFIX = "jdbc:h2:";
+    public static final String DEFAULT_DB_URL = "./db/library";
+    private static final String DB_POSTFIX = ";IFEXISTS=TRUE";
+
+    private final String DB_URL;
     private final String USER;
     private final char[] PASSWORD;
 
     private Database(String user, char[] password, String dbURL) {
         USER = user;
         PASSWORD = password;
-        DB_URL = dbURL;
+        DB_URL = DB_PREFIX + dbURL + DB_POSTFIX;
     }
 
     private static boolean canConnect(String user, char[] password, String dbURL) {
-        throw new UnsupportedOperationException();
+        String url = DB_PREFIX + dbURL + DB_POSTFIX;
+        Connection conn = null;
+        try {
+            Class.forName(JDBC_DRIVER);
+            conn = DriverManager.getConnection(url, user, new String(password));
+            return true;
+        } catch (SQLException e) {
+            return false;
+        } catch (Exception e) {
+            return false;
+        } finally {
+            if (conn != null) {
+                try {
+                    conn.close();
+                } catch (SQLException e) { /* Can't do anything */ }
+            }
+        }
     }
 
     public static Database connect(String user, char[] password) {
