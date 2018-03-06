@@ -47,7 +47,6 @@ class ID3v23 {
  * Class for working with ID3 metadata
  */
 public class Metadata {
-
     public enum FormatName {NONE, ID3v1, ID3v2, ID3v23}
 
     // FIELDS
@@ -496,7 +495,6 @@ public class Metadata {
         } catch (ArrayIndexOutOfBoundsException e) {
             // Data ended suddenly or header was incorrect
             // Nothing to do - end read header
-//            e.printStackTrace();
         } catch (Exception e) {
             e.printStackTrace(System.err);
         } catch (Error e) {

@@ -101,7 +101,7 @@ public class CacheReader {
                 }
             }
         } catch (UnsupportedOperationException e) {
-            // nothing to do
+            // Nothing to do
         }
 
         return songName;
@@ -114,29 +114,31 @@ public class CacheReader {
      */
     private static String detectCachePath() {
         String userOS = System.getProperty("os.name").toLowerCase();
+        String cachePath = "";
 
         if (userOS.contains("win")) {
             // WINDOWS
             // <ROOT>:\Users\<USERNAME>\AppData\Local\Google\Chrome\User Data\Default\Media Cache
-            String googleChromeMusicCache = Paths.get(System.getProperty("user.home"), "AppData", "Local", "Google", "Chrome", "User Data", "Default", "Media Cache")
+            String googleChromeMusicCache = Paths.get(System.getProperty("user.home"), "AppData", "Local",
+                    "Google", "Chrome", "User Data", "Default", "Media Cache")
                     .toAbsolutePath().toString();
-            return googleChromeMusicCache;
+            cachePath = googleChromeMusicCache;
         } else if (userOS.contains("mac")) {
             // MAC OS
-
+            throw new UnsupportedOperationException();
         } else if (userOS.contains("nix") || userOS.contains("nux") || userOS.contains("aix")) {
             // UNIX
             // $Home/.cache/google-chrome/Default/Media\ Cache/
-
+            throw new UnsupportedOperationException();
         } else if (userOS.contains("sunos")) {
             // SOLARIS
-
+            throw new UnsupportedOperationException();
         } else {
             // UNKNOWN OS
             throw new UnsupportedOperationException("Unknown OS!");
         }
 
-        throw new UnsupportedOperationException();
+        return cachePath;
     }
 
     /**

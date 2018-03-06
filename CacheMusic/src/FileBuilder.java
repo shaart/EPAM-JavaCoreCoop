@@ -3,8 +3,6 @@ import java.nio.file.*;
 import java.util.List;
 
 public class FileBuilder {
-
-    //    private static String cashFolderPath = "";
     public final static Path DEFAULT_OUTPUT_FOLDER = Paths.get(".", "Tracks");
     private final static String DEFAULT_SONG_NAME = "Unnamed";
 
@@ -22,6 +20,7 @@ public class FileBuilder {
         while (Files.exists(Paths.get(outputFolder, fileName + number + MP3))) {
             number++;
         }
+
         return Paths.get(outputFolder, fileName + number);
     }
 
@@ -32,10 +31,8 @@ public class FileBuilder {
      * @throws IOException
      */
     public static void build(List<String> files) throws IOException {
-
         build(files, DEFAULT_OUTPUT_FOLDER, DEFAULT_SONG_NAME);
     }
-
 
     /**
      * Collect track parts to full track; Additional parameters;
@@ -45,7 +42,6 @@ public class FileBuilder {
      * @throws IOException
      */
     public static void build(List<String> files, String fileName) throws IOException {
-
         build(files, DEFAULT_OUTPUT_FOLDER, fileName);
     }
 
@@ -57,7 +53,6 @@ public class FileBuilder {
      * @throws IOException
      */
     public static void build(List<String> files, Path outputFolder) throws IOException {
-
         build(files, outputFolder, "Unnamed");
     }
 
@@ -70,7 +65,6 @@ public class FileBuilder {
      * @throws IOException
      */
     public static void build(List<String> files, Path outputFolder, String fileName) throws IOException {
-
         if (Files.notExists(outputFolder))
             Files.createDirectories(outputFolder);
 
@@ -81,18 +75,17 @@ public class FileBuilder {
         else
             outSong = Files.createFile(Paths.get(songEnumerator(outputFolder.toAbsolutePath().toString(), fileName) + MP3));
 
-
         for (String str : files) {
-
             Path tmp = Paths.get(str);
 
-            if (Files.isWritable(outSong))
+            if (Files.isWritable(outSong)) {
                 try {
                     Files.write(outSong, Files.readAllBytes(tmp), StandardOpenOption.APPEND);
                 } catch (IOException e) {
                     e.printStackTrace();
                     System.err.println("Error while song building " + fileName);
                 }
+            }
         }
     }
 }
