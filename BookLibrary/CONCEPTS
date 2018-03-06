@@ -1,0 +1,34 @@
+=== Work principles
+Working with database must use special layout (Database.class).
+This class will contain connection and all other logic for interaction
+with database.
+Constructors will be private, for initialization - static connect() method
+with arguments "username", "password", "database path".
+If can't connect using this data - return null value.
+
+Procedures/Queries
+- "Take book for rent"
+- "Return the book"
+
+=== MODELS
+Book(s)
+- id
+- author_id
+- title
+- year
+- upload_date
+- available_for_rent
+
+Author(s)
+- id
+- first_name
+- last_name
+- middle_name (optional)
+
+User(s)
+- id
+- first_name
+- last_name
+- middle_name (optional)
+- birth_date
+- rented_books (M:N)
