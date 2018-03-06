@@ -1,7 +1,6 @@
 package javacore.coop;
 
 import javacore.coop.model.Book;
-
 import java.util.List;
 
 /**
@@ -13,7 +12,7 @@ public class Database {
         - realize all methods
      */
     public static final String JDBC_DRIVER = "org.h2.Driver";
-    public static final String DEFAULT_DB_URL = "jdbc:h2:~/db";
+    public static final String DEFAULT_DB_URL = "jdbc:h2:~db/library";
     private final String DB_URL;
 
     private final String USER;
