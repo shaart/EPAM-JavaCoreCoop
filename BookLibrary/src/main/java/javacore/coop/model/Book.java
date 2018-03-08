@@ -4,9 +4,10 @@ package javacore.coop.model;
  * Book's model
  */
 public class Book {
-    /* TODO
-        - Check and create Book's model
-     */
+
+    private static final String TABLE_NAME = "BOOKS";
+    
+
     public Book() {
     }
 
