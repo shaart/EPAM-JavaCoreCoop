@@ -3,20 +3,16 @@ package javacore.coop.model;
 import java.util.HashSet;
 import java.util.Set;
 
-/**
- * User's model
- */
-public class User {
-    private static final String TABLE_NAME = "users";
+public class Author {
+
+    private static final String TABLE_NAME = "authors";
     private static final String ID_COLUMN = "id";
     private static final String FIRST_NAME_COLUMN = "first_name";
     private static final String LAST_NAME_COLUMN = "last_name";
-    private static final String AGE_COLUMN = "age";
 
     private int id;
     private String firstName;
     private String lastName;
-    private int age;
     private Set<Book> books = new HashSet<>();
 
     public int getId() {
@@ -43,14 +39,6 @@ public class User {
         this.lastName = lastName;
     }
 
-    public int getAge() {
-        return age;
-    }
-
-    public void setAge(int age) {
-        this.age = age;
-    }
-
     public Set<Book> getBooks() {
         return books;
     }
@@ -59,20 +47,18 @@ public class User {
         this.books = books;
     }
 
-    public User(int id, String firstName, String lastName, int age) {
+    public Author(int id, String firstName, String lastName) {
         this.id = id;
         this.firstName = firstName;
         this.lastName = lastName;
-        this.age = age;
     }
 
     @Override
     public String toString() {
-        return "User{" +
+        return "Author{" +
                 "id=" + id +
                 ", firstName='" + firstName + '\'' +
                 ", lastName='" + lastName + '\'' +
-                ", age=" + age +
                 ", books=" + books +
                 '}';
     }
