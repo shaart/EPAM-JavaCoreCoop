@@ -19,7 +19,7 @@ public class Database {
     public static final String JDBC_DRIVER = "org.h2.Driver";
 
     private static final String DB_PREFIX = "jdbc:h2:";
-    public static final String DEFAULT_DB_URL = "./db/library";
+    public static final String DEFAULT_DB_URL = "src/db/library";
     private static final String DB_POSTFIX = ";IFEXISTS=TRUE";
 
     private final String DB_URL;
@@ -108,6 +108,30 @@ public class Database {
      */
     public List<Book> getBooks(int page, int size) {
         throw new UnsupportedOperationException();
+    }
+
+    /**
+     *
+     * @return Connection instance
+     * @throws SQLException
+     */
+    public Connection getConnection () throws SQLException {
+        return DriverManager.getConnection(DB_URL,USER,PASSWORD.toString());
+    }
+
+    /**
+     *
+     * @param connection
+     * @throws SQLException
+     */
+    public void closeConnection (Connection connection) throws SQLException {
+        if (connection == null)
+            return;
+        try {
+            connection.close();
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
     }
 
 }
