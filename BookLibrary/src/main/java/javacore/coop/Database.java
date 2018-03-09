@@ -115,8 +115,12 @@ public class Database {
      * @return Connection instance
      * @throws SQLException
      */
-    public Connection getConnection () throws SQLException {
-        return DriverManager.getConnection(DB_URL,USER,PASSWORD.toString());
+    public Connection getConnection () {
+        try {
+            return DriverManager.getConnection(DB_URL, USER, PASSWORD.toString());
+        } catch (SQLException ex) {
+            System.err.println("Driver isn't connected");
+        }
     }
 
     /**
