@@ -13,6 +13,9 @@ public class Main {
         Database db = null;
         try {
             db = Database.connect("", "".toCharArray(), Database.DEFAULT_DB_URL);
+            if (db == null) {
+                throw new Exception("Can't connect to database");
+            }
             final long ISBN_OCA = 1118957407L;
             final long ISBN_PATTERNS = 9780201485370L;
             final String BOOK_NOT_FOUND_FORMAT = "Book with ISBN %d not found";
