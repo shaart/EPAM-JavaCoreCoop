@@ -10,7 +10,7 @@ import java.util.List;
 /**
  * Layout for working with database
  */
-public class Database {
+public class Database implements AutoCloseable{
     /* TODO
         - add necessary methods
         - realize all methods
@@ -22,43 +22,42 @@ public class Database {
     public static final String DEFAULT_DB_URL = "src/db/library";
     private static final String DB_POSTFIX = ";IFEXISTS=TRUE";
 
-    private final String DB_URL;
-    private final String USER;
-    private final char[] PASSWORD;
+    //private final String DB_URL;
+    //private final String USER;
+    //private final char[] PASSWORD;
 
-    private Database(String user, char[] password, String dbURL) {
-        USER = user;
-        PASSWORD = password;
-        DB_URL = DB_PREFIX + dbURL + DB_POSTFIX;
+    private Connection connection = null;
+
+    private Database (Connection connection){
+
+            this.connection = connection;
     }
 
-    private static boolean canConnect(String user, char[] password, String dbURL) {
+
+    private static Connection getConnection(String user, char[] password, String dbURL) {
         String url = DB_PREFIX + dbURL + DB_POSTFIX;
         Connection conn = null;
+
         try {
             Class.forName(JDBC_DRIVER);
             conn = DriverManager.getConnection(url, user, new String(password));
-            return true;
         } catch (SQLException e) {
-            return false;
-        } catch (Exception e) {
-            return false;
-        } finally {
-            if (conn != null) {
-                try {
-                    conn.close();
-                } catch (SQLException e) { /* Can't do anything */ }
-            }
+            System.out.println("Can't connect to current database");
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
         }
+        return conn;
     }
 
     public static Database connect(String user, char[] password) {
         return connect(user, password, DEFAULT_DB_URL);
     }
 
+
     public static Database connect(String user, char[] password, String dbURL) {
-        if (canConnect(user, password, dbURL)) {
-            return new Database(user, password, dbURL);
+        Connection connection;
+        if ((connection = getConnection(user, password, dbURL)) != null) {
+            return new Database(connection);
         } else {
             return null;
         }
@@ -110,18 +109,6 @@ public class Database {
         throw new UnsupportedOperationException();
     }
 
-    /**
-     *
-     * @return Connection instance
-     * @throws SQLException
-     */
-    public Connection getConnection () {
-        try {
-            return DriverManager.getConnection(DB_URL, USER, PASSWORD.toString());
-        } catch (SQLException ex) {
-            System.err.println("Driver isn't connected");
-        }
-    }
 
     /**
      *
@@ -138,4 +125,9 @@ public class Database {
         }
     }
 
+    @Override
+    public void close() throws Exception {
+        if (connection != null)
+            connection.close();
+    }
 }
