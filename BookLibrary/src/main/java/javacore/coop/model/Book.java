@@ -10,43 +10,52 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.time.LocalDateTime;
+import java.sql.Timestamp;
 
 /**
  * Book's model
  */
 public class Book {
 
-    private static final String TABLE_NAME = "books";
-    private static final String ID_COLUMN = "id";
-    private static final String AUTHOR_ID_COLUMN = "author_id";
-    private static final String TITLE_COLUMN = "title";
-    private static final String YEAR_COLUMN = "year";
-    private static final String UPLOAD_DATE_COLUMN = "upload_date";
-    private static final String IS_AVALIBLE_COLUMN = "is_available";
+    public static final String TABLE_NAME = "books";
+    public static final String AUTHOR_COLUMN = "AUTHOR";
+    public static final String TITLE_COLUMN = "TITLE";
+    public static final String ADDED_DATE_COLUMN = "added_date";
+    public static final String REMAINED_AMOUNT = "remained_amount";
+    public static final String ISBN_COLUMN ="ISBN";
 
 
-    private int id;
-    private String author_id;
+    private String isbn;
+    private String author;
     private String title;
-    private int year;
-    private LocalDateTime uploadDate;
-    private boolean isAvailable;
+    private Timestamp addedDate;
+    private int remainedAmount;
 
-    public int getId() {
-        return id;
+    @Override
+    public String toString() {
+        return "Book{" +
+                "isbn=" + isbn +
+                ", author='" + author + '\'' +
+                ", title='" + title + '\'' +
+                ", addedDate=" + addedDate +
+                ", remainedAmount=" + remainedAmount +
+                '}';
     }
 
-    public void setId(int id) {
-        this.id = id;
+    public String getIsbn() {
+        return isbn;
     }
 
-    public String getAuthor_id() {
-        return author_id;
+    public void setIsbn(String isbn) {
+        this.isbn = isbn;
     }
 
-    public void setAuthor_id(String author_id) {
-        this.author_id = author_id;
+    public String getAuthor() {
+        return author;
+    }
+
+    public void setAuthor(String author) {
+        this.author = author;
     }
 
     public String getTitle() {
@@ -57,54 +66,26 @@ public class Book {
         this.title = title;
     }
 
-    public int getYear() {
-        return year;
+    public Timestamp getAddedDate() {
+        return addedDate;
     }
 
-    public void setYear(int year) {
-        this.year = year;
+    public void setAddedDate(Timestamp addedDate) {
+        this.addedDate = addedDate;
     }
 
-    public LocalDateTime getUploadDate() {
-        return uploadDate;
+    public int getRemainedAmount() {
+        return remainedAmount;
     }
 
-    public void setUploadDate(LocalDateTime uploadDate) {
-        this.uploadDate = uploadDate;
+    public void setRemainedAmount(int remainedAmount) {
+        this.remainedAmount = remainedAmount;
     }
-
-    public boolean isAvailable() {
-        return isAvailable;
-    }
-
-    public void setAvailable(boolean available) {
-        isAvailable = available;
-    }
-
-    @Override
-    public String toString() {
-        return "Book{" +
-                "id=" + id +
-                ", author_id='" + author_id + '\'' +
-                ", title='" + title + '\'' +
-                ", year=" + year +
-                ", uploadDate=" + uploadDate +
-                ", isAvailable=" + isAvailable +
-                '}';
-    }
-
 
     public Book() {
     }
 
-    public Book(int id, String author_id, String title, int year, LocalDateTime uploadDate, boolean isAvailable) {
-        this.id = id;
-        this.author_id = author_id;
-        this.title = title;
-        this.year = year;
-        this.uploadDate = uploadDate;
-        this.isAvailable = isAvailable;
-    }
+
 
     /**
      * Get info about book from remoted store by book's ISBN.<br>
@@ -125,7 +106,7 @@ public class Book {
      * @throws BookNotFoundException if book by this ISBN not found
      * @throws IOException           if can't connect to remote server
      */
-    public static Book request(long ISBN) throws BookNotFoundException, IOException {
+    public static Book request(String ISBN) throws BookNotFoundException, IOException {
         final String ISBN_API_URL = "https://www.googleapis.com/books/v1/volumes?q=isbn:";
         String response;
 
@@ -198,14 +179,12 @@ public class Book {
         }
         String publishDate = booksInfo.has(VOLUMEINFO_PUBLISH_DATE) ? booksInfo.get(VOLUMEINFO_PUBLISH_DATE).getAsString() : "";
         final int separatorIndex = publishDate.contains("-") ? publishDate.indexOf("-") : 0;
-        int year = Integer.valueOf(publishDate.substring(0, separatorIndex));
+        //int year = Integer.valueOf(publishDate.substring(0, separatorIndex));
 
         // TODO Fill all necessary fields of the book
         Book foundBook = new Book();
         foundBook.setTitle(title);
-        foundBook.setYear(year);
-        foundBook.setAuthor_id(authors);
-//        foundBook.setUploadDate(LocalDateTime.now());
+        foundBook.setAuthor(authors);
 
         return foundBook;
     }

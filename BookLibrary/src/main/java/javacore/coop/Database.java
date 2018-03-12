@@ -1,10 +1,14 @@
 package javacore.coop;
 
 import javacore.coop.model.Book;
+import javacore.coop.model.BookNotFoundException;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
+import javax.xml.crypto.Data;
+import java.io.IOException;
+import java.sql.*;
+import java.time.LocalDateTime;
+import java.time.temporal.TemporalAccessor;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -19,14 +23,19 @@ public class Database implements AutoCloseable{
     public static final String JDBC_DRIVER = "org.h2.Driver";
 
     private static final String DB_PREFIX = "jdbc:h2:";
-    public static final String DEFAULT_DB_URL = "src/db/library";
+    public static final String DEFAULT_DB_URL = "./db/library";
     private static final String DB_POSTFIX = ";IFEXISTS=TRUE";
+
+    private static final String GET_ALL = "SELECT * FROM BOOKS";
+    String SORT_BY_SQL = GET_ALL + " order by "+"?";
+    String ADD_BOOK = "INSERT INTO BOOKS (TITLE, AUTHOR, ISBN, ADDED_DATE, REMAINED_AMOUNT) VALUES (?,?,?,?,?)";
+    String FIND_BOOK_ISBN = "SELECT ADDED_DATE,AUTHOR,TITLE,REMAINED_AMOUNT FROM BOOKS WHERE ISBN=?";
 
     //private final String DB_URL;
     //private final String USER;
     //private final char[] PASSWORD;
 
-    private Connection connection = null;
+    public Connection connection = null;
 
     private Database (Connection connection){
 
@@ -63,12 +72,40 @@ public class Database implements AutoCloseable{
         }
     }
 
-    public boolean addBook(Book newBook) {
-        throw new UnsupportedOperationException();
+
+    public void addBook (String isbn){
+        try {
+            Book book = Book.request(isbn);
+
+            PreparedStatement prst = connection.prepareStatement(ADD_BOOK);
+            prst.setString(1,book.getTitle());
+            prst.setString(2,book.getAuthor());
+            prst.setString(3, isbn);
+            prst.setTimestamp(4, new Timestamp(System.currentTimeMillis()));
+            prst.setInt(5,10);
+
+            prst.executeUpdate();
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (BookNotFoundException e) {
+            e.printStackTrace();
+        }
+
     }
 
-    public int booksRemained(Book book) {
-        throw new UnsupportedOperationException();
+    public void changeBooksRemained(String isbn, int number) {
+
+        try {
+            PreparedStatement prst = connection.prepareStatement("UPDATE BOOKS SET REMAINED_AMOUNT=" + number +" WHERE ISBN=" + isbn);
+            prst.executeUpdate();
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
     }
 
     /**
@@ -85,8 +122,25 @@ public class Database implements AutoCloseable{
         throw new UnsupportedOperationException();
     }
 
-    public Book getBook(int id) {
-        throw new UnsupportedOperationException();
+    public Book getBook(String isbn) {
+        Book book = new Book();
+        try {
+            PreparedStatement prst = connection.prepareStatement("SELECT * FROM BOOKS WHERE ISBN=" + isbn);
+            //prst.setString(1, isbn);
+            ResultSet rs = prst.executeQuery();
+
+            while (rs.next()) {
+                book = new Book();
+                book.setIsbn(rs.getString(Book.ISBN_COLUMN));
+                book.setAuthor(rs.getString(Book.AUTHOR_COLUMN));
+                book.setTitle(rs.getString(Book.TITLE_COLUMN));
+                book.setAddedDate(rs.getTimestamp(Book.ADDED_DATE_COLUMN));
+                book.setRemainedAmount(rs.getInt(Book.REMAINED_AMOUNT));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return book;
     }
 
     /**
@@ -94,20 +148,36 @@ public class Database implements AutoCloseable{
      *
      * @return List with all stored books
      */
-    public List<Book> getBooks() {
-        throw new UnsupportedOperationException();
+    public List<Book> getBooks(String column) {
+        Book book = null;
+        List<Book> books = new LinkedList<>();
+
+        try {
+
+            PreparedStatement prst = connection.prepareStatement("select * from books order by "+ column);
+            //prst.setString(1,column.toUpperCase());
+
+            ResultSet rs = prst.executeQuery();
+
+            //System.out.println(SORT_BY_SQL);
+
+            while (rs.next()){
+                book = new Book();
+                book.setIsbn(rs.getString(Book.ISBN_COLUMN));
+                book.setAuthor(rs.getString(Book.AUTHOR_COLUMN));
+                book.setTitle(rs.getString(Book.TITLE_COLUMN));
+                book.setAddedDate(rs.getTimestamp(Book.ADDED_DATE_COLUMN));
+                book.setRemainedAmount(rs.getInt(Book.REMAINED_AMOUNT));
+                books.add(book);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return books;
     }
 
-    /**
-     * Get list of books by <code>page</code> number with page's <code>size</code>.
-     *
-     * @param page Number of page
-     * @param size Size of page
-     * @return Specified list of books
-     */
-    public List<Book> getBooks(int page, int size) {
-        throw new UnsupportedOperationException();
-    }
+
 
 
     /**
@@ -129,5 +199,8 @@ public class Database implements AutoCloseable{
     public void close() throws Exception {
         if (connection != null)
             connection.close();
+    }
+
+    public void updateBooksNumber(long isbn_oca, int newNumber) {
     }
 }
