@@ -5,7 +5,9 @@ import java.util.Scanner;
 /**
  * Program's entry class for interaction with user
  */
+@Deprecated
 public class UserInterface {
+    @Deprecated
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
         Database db = null;
@@ -34,12 +36,13 @@ public class UserInterface {
                 databaseURL = Database.DEFAULT_DB_URL;
             }
 
-            if ((db = Database.connect(username, password, databaseURL)) != null) {
+            try {
+                db = Database.connect(username, password, databaseURL);
                 connected = true;
                 System.out.println("~ Connection with database established successfully.");
-            } else {
-                System.out.println("[!] Can't connect to database with this " +
-                        "url using these username and password.");
+            } catch (Exception e) {
+                System.out.println("[!] Can't connect to database: " + e.toString());
+
                 boolean getAnswer = false;
                 while (!getAnswer) {
                     System.out.print("Try again? (Y/N)  ");
