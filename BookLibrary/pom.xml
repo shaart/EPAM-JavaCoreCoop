@@ -42,11 +42,10 @@
 
     <dependencies>
         <!-- https://mvnrepository.com/artifact/com.h2database/h2 -->
-
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
-            <version>RELEASE</version>
+            <version>1.4.196</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/com.google.code.gson/gson -->
         <dependency>
@@ -60,7 +59,7 @@
         <resources>
             <resource>
                 <directory>src/db</directory>
-                <targetPath>../db</targetPath>
+                <targetPath>.././db</targetPath>
             </resource>
         </resources>
         <plugins>
@@ -85,7 +84,7 @@
                     <archive>
                         <manifest>
                             <!-- Jar file entry point -->
-                            <mainClass>javacore.coop.UserInterface</mainClass>
+                            <mainClass>javacore.coop.Main</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
@@ -112,7 +111,7 @@
                     <archive>
                         <manifest>
                             <!-- Jar file entry point -->
-                            <mainClass>javacore.coop.UserInterface</mainClass>
+                            <mainClass>javacore.coop.Main</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
