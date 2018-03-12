@@ -85,8 +85,6 @@ public class Book {
     public Book() {
     }
 
-
-
     /**
      * Get info about book from remoted store by book's ISBN.<br>
      * Usage sample:<br>
@@ -179,7 +177,6 @@ public class Book {
         }
         String publishDate = booksInfo.has(VOLUMEINFO_PUBLISH_DATE) ? booksInfo.get(VOLUMEINFO_PUBLISH_DATE).getAsString() : "";
         final int separatorIndex = publishDate.contains("-") ? publishDate.indexOf("-") : 0;
-        //int year = Integer.valueOf(publishDate.substring(0, separatorIndex));
 
         // TODO Fill all necessary fields of the book
         Book foundBook = new Book();
